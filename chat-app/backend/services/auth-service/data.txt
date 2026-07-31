@@ -1,0 +1,1151 @@
+  auth-service
+
+  src
+  │
+  ├── config
+  │   ├── db.js
+  │   ├── redis.js
+  │   
+  │
+  ├── controllers
+  │   └── auth.controller.js
+  │
+  ├── middleware
+  │   ├── errorHandler.js
+  │   ├── validate.middleware.js
+  │   └── auth.middleware.js
+  ├── models
+  │   └── user.model.js
+  │
+  ├── routes
+  │   └── auth.routes.js
+  │
+  ├── services
+  │   ├── auth.service.js
+  │   └──session.service.js
+  ├── utils
+  │   ├── AppError.js
+  │   ├── ApiResponse.js
+  │   ├── asyncHandler.js
+  │   ├── generateToken.js
+  │   └── sanitizeUser.js
+  │
+  ├── validators
+  |   └──auth.validator.js
+  |
+  └── server.js
+
+  --------------------------------- server.js ------------------------------
+  import "dotenv/config";
+
+import express from "express";
+import cors from "cors";
+
+import { connectDB } from "./config/db.js";
+import { connectRedis } from "./config/redis.js";
+
+
+import authRoutes from "./routes/auth.routes.js";
+import errorHandler from "./middleware/errorHandler.js";
+
+console.log("🚀 Starting Auth Service...");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/health", (req, res) => {
+  res.json({
+    service: "auth-service",
+    status: "running",
+  });
+});
+
+app.use("/api/auth", authRoutes);
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5001;
+
+const startServer = async () => {
+  await connectDB();
+  await connectRedis();
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Auth Service running on ${PORT}`);
+  });
+};
+
+startServer();
+
+  ------------------------------------ config/db.js ------------------------------------
+ import mongoose from "mongoose";
+
+export const connectDB = async () => {
+  try {
+    console.log("[DB] 🔄 Attempting to connect to MongoDB...");
+
+    if (!process.env.MONGO_URI) {
+      console.error("[DB] ❌ MONGO_URI missing in environment variables");
+      throw new Error("MONGO_URI is missing in .env");
+    }
+
+    await mongoose.connect(process.env.MONGO_URI);
+
+    console.log("[DB] ✅ MongoDB Connected Successfully");
+  } catch (error) {
+    console.error("[DB] ❌ Connection Failed:", error.message);
+    process.exit(1);
+  }
+};
+
+  ----------------------------------------- config/redis/js -----------------------------
+  import { createClient } from "redis";
+
+
+export const redisClient =
+  createClient({
+    url: process.env.REDIS_URL,
+  });
+
+
+redisClient.on(
+  "connect",
+  () => {
+    console.log(
+      "🟢 Redis connecting..."
+    );
+  }
+);
+
+
+redisClient.on(
+  "ready",
+  () => {
+    console.log(
+      "🚀 Redis ready"
+    );
+  }
+);
+
+
+redisClient.on(
+  "reconnecting",
+  () => {
+    console.log(
+      "🔄 Redis reconnecting..."
+    );
+  }
+);
+
+
+redisClient.on(
+  "end",
+  () => {
+    console.log(
+      "🔴 Redis connection closed"
+    );
+  }
+);
+
+
+redisClient.on(
+  "error",
+  (error) => {
+    console.error(
+      "❌ Redis error:",
+      error.message
+    );
+  }
+);
+
+
+
+export const connectRedis =
+  async () => {
+
+    if (
+      redisClient.isOpen
+    ) {
+      console.log(
+        "⚠️ Redis already connected"
+      );
+
+      return;
+    }
+
+
+    try {
+
+      if(
+        !process.env.REDIS_URL
+      ){
+
+        throw new Error(
+          "REDIS_URL missing"
+        );
+
+      }
+
+
+      await redisClient.connect();
+
+
+      console.log(
+        "✅ Redis connected successfully"
+      );
+
+
+    } catch(error){
+
+      console.error(
+        "❌ Redis connection failed:",
+        error.message
+      );
+
+
+      process.exit(1);
+
+    }
+
+  };
+
+    ------------------------------------- routes/auth.routes.js -----------------------------
+    import express from "express";
+
+import {
+  login,
+  register,
+  logout,
+} from "../controllers/auth.controller.js";
+
+import validate from "../middleware/validate.middleware.js";
+
+import {
+  registerSchema,
+  loginSchema,
+} from "../validators/auth.validator.js";
+
+import authMiddleware from "../middleware/auth.middleware.js";
+
+
+const router =
+  express.Router();
+
+
+
+router.post(
+  "/register",
+  
+  register
+);
+
+
+
+router.post(
+  "/login",
+  validate(loginSchema),
+  login
+);
+
+
+
+router.post(
+  "/logout",
+  authMiddleware,
+  logout
+);
+
+
+
+export default router;
+
+  -------------------------------------------- middleware/auth.middleware.js ------------------------------
+  import jwt from "jsonwebtoken";
+
+import AppError from "../utils/AppError.js";
+
+import {
+  redisClient
+} from "../config/redis.js";
+
+import {
+  getSession,
+} from "../services/session.service.js";
+
+
+const authMiddleware = async (
+  req,
+  res,
+  next
+) => {
+
+
+  const authHeader =
+    req.headers.authorization;
+
+
+
+  if(
+    !authHeader ||
+    !authHeader.startsWith("Bearer ")
+  ){
+
+    return next(
+      new AppError(
+        "Authentication required",
+        401
+      )
+    );
+
+  }
+
+
+
+  const token =
+    authHeader.split(" ")[1];
+
+
+
+  try{
+
+
+    const decoded =
+      jwt.verify(
+        token,
+        process.env.JWT_SECRET
+      );
+
+
+
+    const {
+      userId,
+      sessionId,
+    } = decoded;
+
+
+
+    if(
+      !userId ||
+      !sessionId
+    ){
+
+      throw new AppError(
+        "Invalid token",
+        401
+      );
+
+    }
+
+
+
+    const session =
+      await getSession(
+        sessionId
+      );
+
+
+
+if(
+  !session ||
+  session.userId !== userId
+){
+
+  throw new AppError(
+    "Session expired",
+    401
+  );
+
+}
+
+
+
+const activeSession =
+  await redisClient.get(
+    `user_active_session:${userId}`
+  );
+
+
+if(
+  activeSession !== sessionId
+){
+
+  throw new AppError(
+    "Logged in from another device",
+    401
+  );
+
+}
+
+
+    req.user = {
+
+      userId,
+
+      sessionId,
+
+    };
+
+
+
+    next();
+
+
+
+  }
+  catch(error){
+
+
+    if(
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ){
+
+      return next(
+        new AppError(
+          "Invalid or expired token",
+          401
+        )
+      );
+
+    }
+
+
+
+    next(error);
+
+
+  }
+
+};
+
+
+export default authMiddleware;
+  ------------------------------------------- middleware/errorHandler.js ----------------------------
+ const errorHandler = (
+  err,
+  req,
+  res,
+  next
+) => {
+
+  console.error(
+    "❌ Error:",
+    err.message
+  );
+
+
+  const statusCode =
+    err.statusCode || 500;
+
+
+  res.status(statusCode).json({
+
+    success:false,
+
+    message:
+      err.message ||
+      "Internal Server Error"
+
+  });
+
+};
+
+
+export default errorHandler;
+  ----------------------------------------- middleware/validate.middleware.js -----------------------
+ import AppError from "../utils/AppError.js";
+
+const validate = (schema) => {
+  return (req, res, next) => {
+    try {
+      schema.parse(req.body);
+
+      next();
+    } catch (error) {
+      const message =
+        error.issues?.[0]?.message ||
+        "Validation failed";
+
+      next(new AppError(message, 400));
+    }
+  };
+};
+
+export default validate;
+
+  -------------------------------------- controllers/auth.controller.js ------------------------------
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+} from "../services/auth.service.js";
+
+import asyncHandler from "../utils/asyncHandler.js";
+
+import ApiResponse from "../utils/ApiResponse.js";
+
+
+
+export const register = asyncHandler(
+  async (
+    req,
+    res
+  ) => {
+
+    console.log("we reach here");
+    const result =
+      await registerUser(
+        req.body
+      );
+
+
+
+    res
+      .status(201)
+      .json(
+
+        new ApiResponse(
+
+          201,
+
+          "User registered successfully",
+
+          result
+
+        )
+
+      );
+
+
+  }
+);
+
+
+
+
+
+export const login = asyncHandler(
+  async (
+    req,
+    res
+  ) => {
+
+
+    const result =
+      await loginUser(
+        req.body
+      );
+
+
+
+    res
+      .status(200)
+      .json(
+
+        new ApiResponse(
+
+          200,
+
+          "Login successful",
+
+          result
+
+        )
+
+      );
+
+
+  }
+);
+
+
+
+
+
+export const logout = asyncHandler(
+  async (
+    req,
+    res
+  ) => {
+
+
+
+    await logoutUser(
+  req.user.sessionId,
+  req.user.userId
+);
+
+
+
+    res
+      .status(200)
+      .json(
+
+        new ApiResponse(
+
+          200,
+
+          "Logout successful"
+
+        )
+
+      );
+
+
+  }
+);
+
+  ------------------------------------------ services/auth.service.js --------------------------------------
+import bcrypt from "bcryptjs";
+import axios from "axios";
+import User from "../models/user.model.js";
+
+import AppError from "../utils/AppError.js";
+import {
+  createSession,
+  deleteSession,
+  
+} from "./session.service.js";
+
+import {
+  generateToken,
+} from "../utils/generateToken.js";
+
+import sanitizeUser from "../utils/sanitizeUser.js";
+
+
+export const registerUser = async ({
+  name,
+  email,
+  password,
+}) => {
+
+  const userExists =
+    await User.findOne({
+      email,
+    });
+
+
+  if(userExists){
+
+    throw new AppError(
+      "User already exists",
+      409
+    );
+
+  }
+
+
+  const hashedPassword =
+    await bcrypt.hash(
+      password,
+      10
+    );
+
+
+  const user =
+    await User.create({
+
+      email,
+
+      password: hashedPassword,
+
+    });
+
+
+  // create user profile in user-service
+  await axios.post(
+    "http://localhost:5002/api/users/profile",
+    {
+      userId: user._id.toString(),
+      name,
+      email
+    }
+  );
+
+
+  return {
+
+    user:
+    sanitizeUser(user),
+
+  };
+
+};
+
+
+
+
+export const loginUser = async ({
+  email,
+  password,
+}) => {
+
+
+  const user =
+    await User.findOne({
+      email,
+    })
+    .select("+password");
+
+
+
+  if(!user){
+
+    throw new AppError(
+      "Invalid credentials",
+      401
+    );
+
+  }
+
+
+
+  const isMatch =
+    await bcrypt.compare(
+
+      password,
+
+      user.password
+
+    );
+
+
+
+  if(!isMatch){
+
+    throw new AppError(
+      "Invalid credentials",
+      401
+    );
+
+  }
+
+
+
+
+  // createSession automatically removes old device session
+
+  const sessionId =
+    await createSession(
+      user._id.toString()
+    );
+
+
+
+  const token =
+    generateToken(
+
+      user._id.toString(),
+
+      sessionId
+
+    );
+
+
+
+  return {
+
+    user:
+      sanitizeUser(user),
+
+    token,
+
+  };
+
+};
+
+
+
+export const logoutUser = async (
+  sessionId,
+  userId
+)=>{
+
+
+  if (!sessionId) {
+
+    throw new AppError(
+      "Session not found",
+      400
+    );
+
+  }
+
+
+  await deleteSession(
+    sessionId,
+    userId
+  );
+
+
+};
+  ----------------------------------------- services/session.service.js ------------------------------------
+  import crypto from "crypto";
+
+import {
+  redisClient,
+} from "../config/redis.js";
+
+
+const SESSION_EXPIRE_SECONDS =
+  Number(process.env.SESSION_EXPIRE_SECONDS) ||
+  60 * 60 * 24 * 7;
+
+
+// Create new session
+export const createSession = async (
+  userId
+) => {
+
+
+  if(
+    !redisClient.isReady
+  ){
+
+    throw new Error(
+      "Redis is not ready"
+    );
+
+  }
+
+
+  // Remove previous active session
+  const oldSessionId =
+    await redisClient.get(
+      `user_active_session:${userId}`
+    );
+
+
+ if(oldSessionId){
+  const deleted =
+    await redisClient.del(
+      `session:${oldSessionId}`
+    );
+
+}
+
+
+
+  const sessionId =
+    crypto.randomUUID();
+
+
+
+  const sessionData = {
+
+    userId,
+
+    createdAt:
+      new Date().toISOString(),
+
+  };
+
+
+await redisClient.set(
+  `session:${sessionId}`,
+  JSON.stringify(sessionData),
+  {
+    EX: SESSION_EXPIRE_SECONDS,
+  }
+);
+
+await redisClient.set(
+  `user_active_session:${userId}`,
+  sessionId,
+  {
+    EX: SESSION_EXPIRE_SECONDS,
+  }
+);
+
+return sessionId;
+
+
+
+  
+
+};
+
+
+
+
+
+// Get session
+export const getSession = async (
+  sessionId
+) => {
+
+
+  if(
+    !redisClient.isReady
+  ){
+
+    return null;
+
+  }
+
+
+
+  const session =
+    await redisClient.get(
+      `session:${sessionId}`
+    );
+
+
+
+  if(!session){
+
+    return null;
+
+  }
+
+
+
+  return JSON.parse(
+    session
+  );
+
+};
+
+
+
+
+
+// Delete session
+export const deleteSession = async (
+  sessionId,
+  userId
+) => {
+
+await redisClient.del(
+  `session:${sessionId}`
+);
+
+if(userId){
+
+const activeSession =
+ await redisClient.get(
+ `user_active_session:${userId}`
+ );
+
+if(
+ activeSession === sessionId
+){
+
+ await redisClient.del(
+  `user_active_session:${userId}`
+ );
+
+
+}
+
+}
+
+
+};
+  ----------------------------------------------- utils/ApiResponse.js ---------------------------------------
+ class ApiResponse {
+  constructor(statusCode, message, data = null) {
+    this.success = true;
+    this.statusCode = statusCode;
+    this.message = message;
+    this.data = data;
+  }
+}
+
+export default ApiResponse;
+  -------------------------------------------- utils/AppError.js ----------------------------------
+ class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+
+    this.statusCode = statusCode;
+    this.isOperational = true;
+
+    Error.captureStackTrace(
+      this,
+      this.constructor
+    );
+  }
+}
+
+export default AppError;
+  --------------------------------------------- utils/asyncHandler.js ------------------------------------
+ const asyncHandler = (fn) => {
+  return (req, res, next) => {
+
+    Promise
+      .resolve(fn(req, res, next))
+      .catch(next);
+
+  };
+};
+
+export default asyncHandler;
+  ------------------------------------------------ utils/generateToken.js --------------------------------
+ import jwt from "jsonwebtoken";
+
+import AppError from "./AppError.js";
+
+
+export const generateToken = (
+  userId,
+  sessionId
+) => {
+
+
+  if(!process.env.JWT_SECRET){
+
+    throw new AppError(
+      "JWT configuration missing",
+      500
+    );
+
+  }
+
+
+  return jwt.sign(
+
+    {
+      userId,
+      sessionId,
+    },
+
+    process.env.JWT_SECRET,
+
+    {
+      expiresIn:
+        process.env.JWT_EXPIRES_IN || "7d",
+    }
+
+  );
+
+};
+  -------------------------------------------- utils/sanitizeUser.js ---------------------------------
+
+const sanitizeUser = (user)=>{
+
+return {
+
+_id:user._id,
+
+email:user.email,
+
+};
+
+};
+
+
+export default sanitizeUser;
+ 
+
+  ------------------------------------------------- models/user.model.js -------------------------
+
+import mongoose from "mongoose";
+
+
+const userSchema =
+new mongoose.Schema(
+{
+
+email:{
+  type:String,
+  required:true,
+  unique:true,
+  lowercase:true,
+  trim:true,
+},
+
+
+password:{
+  type:String,
+  required:true,
+  select:false,
+},
+
+
+},
+{
+ timestamps:true
+}
+
+);
+
+
+export default mongoose.model(
+ "AuthUser",
+ userSchema
+);
+
+  --------------------------------------------  validators/auth.validator.js ------------------------
+  import { z } from "zod";
+
+export const registerSchema = z.object({
+  name: z
+    .string()
+    .min(3, "Name must be at least 3 characters"),
+
+  email: z
+    .string()
+    .email("Invalid email address"),
+
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters"),
+});
+
+
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .email("Invalid email address"),
+
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters"),
+});
+  --------------------------------------------- package.json -----------------------------------
+ 
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "Authentication microservice",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
+    "redis": "^6.1.0",
+    "zod": "^4.4.3"
+  }
+}
+
+
+  ------------------------------- .env ----------------------------------------
+  PORT=5001
+  RABBITMQ_URL=
+
+  MONGO_URI = 
+
+  REDIS_URL = 
+
+  JWT_SECRET=
+  JWT_EXPIRES_IN= 7d
+
+
+
+
+
+
+
+

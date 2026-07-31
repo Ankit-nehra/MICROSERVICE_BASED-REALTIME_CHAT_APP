@@ -1,0 +1,1067 @@
+-------------------------- server.js -----------------------------
+import "dotenv/config";
+
+import express from "express";
+import http from "http";
+import cors from "cors";
+
+
+import { initSocket } from "./sockets/index.js";
+import { connectRedis } from "./config/redis.js";
+
+
+
+
+
+const app = express();
+
+
+app.use(cors());
+
+app.use(express.json());
+
+
+
+const server = http.createServer(app);
+
+
+
+console.log("⚙️ [INIT] Starting Realtime Service...");
+
+
+
+const startServer = async () => {
+
+  try {
+
+    await connectRedis();
+
+
+    initSocket(server);
+
+
+    app.get("/health", (req,res)=>{
+
+      res.json({
+        status:"Realtime service running",
+        redis:"connected"
+      });
+
+    });
+
+
+    const PORT = process.env.PORT || 5004;
+
+
+    server.listen(PORT,()=>{
+
+      console.log(
+        `🚀 Realtime Service running on ${PORT}`
+      );
+
+    });
+
+
+  } catch(error){
+
+    console.log(
+      "❌ Server Startup Error:",
+      error.message
+    );
+
+    process.exit(1);
+
+  }
+
+};
+
+
+
+startServer();
+--------------------------------sockets/index.js ---------------------
+ 
+import { Server } from "socket.io";
+
+import {
+  addUser,
+  removeUser,
+  getOnlineUsers,
+  onlineUsers,
+  setActiveChat,
+  removeActiveChat,
+  getActiveChat,
+} from "../utils/socketMap.js";
+
+import socketAuth from "../middleware/socketAuth.js";
+
+import {
+  saveNotification,
+  getNotifications,
+  removeNotification
+} from "../services/notification.service.js";
+
+export const initSocket = (server) => {
+  const io = new Server(server, {
+    cors: {
+      origin: "*",
+    },
+  });
+
+  io.use(socketAuth);
+
+  io.on("connection", (socket) => {
+    console.log(
+      "✅ User authenticated:",
+      socket.user.userId
+    );
+
+    // ==========================
+    // JOIN
+    // ==========================
+
+    socket.on(
+      "join",
+      async ({ name, avatar }) => {
+
+        const userId =
+          socket.user.userId;
+
+        addUser(
+          userId,
+          socket.id,
+          name ?? null,
+          avatar ?? ""
+        );
+
+        io.emit(
+          "onlineUsers",
+          getOnlineUsers()
+        );
+
+        const notifications =
+          await getNotifications(userId);
+
+        if (notifications.length) {
+
+          socket.emit(
+            "pendingNotifications",
+            notifications
+          );
+
+        }
+
+      }
+    );
+
+    // ==========================
+    // ACTIVE CHAT
+    // ==========================
+
+    socket.on(
+      "activeChat",
+      ({ chatUserId }) => {
+
+        const userId =
+          socket.user.userId;
+
+        setActiveChat(
+          String(userId),
+          String(chatUserId)
+        );
+
+      }
+    );
+// ==========================
+// OPEN CHAT -> REMOVE REDIS
+// ==========================
+
+socket.on(
+  "openChat",
+  async ({ chatUserId }) => {
+
+    const userId =
+      String(socket.user.userId);
+
+
+    console.log(
+      "🗑️ CLEAR REDIS NOTIFICATIONS:",
+      userId,
+      "OPEN CHAT WITH:",
+      chatUserId
+    );
+
+
+   await removeNotification(
+  userId,
+  chatUserId
+);
+
+
+    socket.emit(
+      "notificationsCleared"
+    );
+
+  }
+);
+    socket.on(
+      "leaveChat",
+      () => {
+
+        const userId =
+          socket.user.userId;
+
+        console.log(
+          "🚪 LEAVE CHAT",
+          userId
+        );
+
+        removeActiveChat(
+          String(userId)
+        );
+
+      }
+    );
+
+    // ==========================
+    // SEND MESSAGE
+    // ==========================
+
+    socket.on(
+      "sendMessage",
+      async (data) => {
+
+        console.log(
+          "🟣 SEND MESSAGE"
+        );
+
+        const receiverSocketId =
+          onlineUsers.get(
+            String(data.receiverId)
+          )?.socketId;
+
+        // const senderData =
+        //   onlineUsers.get(
+        //     String(data.senderId)-----------------------------------------------------------------------
+        //   );
+
+        const notification = {
+
+          messageId:
+            String(data._id),
+
+          senderId:
+            String(data.senderId),
+
+          receiverId:
+            String(data.receiverId),
+
+senderName:
+data.senderName || "User",
+
+senderAvatar:
+data.senderAvatar || "",
+
+          content:
+            data.content,
+
+          createdAt:
+            data.createdAt ||
+            new Date().toISOString()
+
+        };
+
+        // Always save in Redis
+        const receiverActiveChat =
+getActiveChat(
+  String(data.receiverId)
+);
+
+
+// Receiver already chatting with sender
+if (
+  String(receiverActiveChat) ===
+  String(data.senderId)
+) {
+
+  console.log(
+    "💬 Chat already open -> No Redis notification"
+  );
+
+
+  if(receiverSocketId){
+
+    io.to(
+      receiverSocketId
+    ).emit(
+      "receiveMessage",
+      data
+    );
+
+  }
+
+
+  return;
+
+}
+
+
+// Save Redis only when chat is not open
+await saveNotification(
+  data.receiverId,
+  notification
+);
+
+
+// Receiver Offline
+if (!receiverSocketId) {
+
+  console.log(
+    "📦 Receiver Offline -> Notification saved in Redis"
+  );
+
+  return;
+
+}
+
+
+// Send realtime message
+io.to(
+  receiverSocketId
+).emit(
+  "receiveMessage",
+  data
+);
+
+        // Popup notification
+        io.to(
+          receiverSocketId
+        ).emit(
+          "newNotification",
+          notification
+        );
+
+      }
+    );
+
+    // ==========================
+    // DISCONNECT
+    // ==========================
+
+    socket.on(
+      "disconnect",
+      () => {
+
+        console.log(
+          "🔴 DISCONNECT:",
+          socket.id
+        );
+
+        removeUser(
+          socket.id
+        );
+
+        io.emit(
+          "onlineUsers",
+          getOnlineUsers()
+        );
+
+      }
+    );
+
+  });
+
+};
+
+------------------------------- utils/socketMap.js ----------------------
+export const onlineUsers = new Map();
+// userId → { socketId, joinTime, name, avatar }
+
+export const activeChats = new Map();
+
+
+
+export const addUser = (
+  userId,
+  socketId,
+  name = null,
+  avatar = ""
+) => {
+
+
+  console.log(
+    "➕ [MAP ADD]",
+    userId,
+    socketId
+  );
+
+
+
+  const existingUser =
+    onlineUsers.get(
+      String(userId)
+    );
+
+
+
+  if(existingUser){
+
+
+    if(
+      existingUser.socketId === socketId
+    ){
+
+      console.log(
+        "⚠️ User already connected"
+      );
+
+      return;
+
+    }
+
+
+    console.log(
+      "🔄 Replacing old socket"
+    );
+
+  }
+
+
+
+
+  onlineUsers.set(
+    String(userId),
+    {
+
+      socketId,
+
+
+      joinTime:
+        new Date()
+        .toISOString(),
+
+
+      name,
+
+
+      avatar
+
+    }
+  );
+
+
+};
+
+
+
+
+
+export const removeUser = (
+ socketId
+) => {
+
+
+console.log(
+"➖ [MAP REMOVE] socketId:",
+socketId
+);
+
+
+
+for(
+ let [userId,data]
+ of onlineUsers.entries()
+){
+
+
+if(
+ data.socketId === socketId
+){
+
+
+console.log(
+"🗑️ [MAP DELETE] userId:",
+userId
+);
+
+
+onlineUsers.delete(
+ userId
+);
+
+
+activeChats.delete(
+ userId
+);
+
+
+break;
+
+
+}
+
+
+}
+
+
+};
+
+
+
+
+
+export const getOnlineUsers = ()=>{
+
+
+return Array.from(
+ onlineUsers.entries()
+)
+.map(
+([userId,data])=>({
+
+ userId,
+
+ socketId:
+ data.socketId,
+
+
+ joinTime:
+ data.joinTime,
+
+
+ name:
+ data.name,
+
+
+ avatar:
+ data.avatar
+
+
+})
+);
+
+
+};
+
+
+
+
+
+export const setActiveChat = (
+ userId,
+ chatUserId
+)=>{
+
+activeChats.set(
+ String(userId),
+ String(chatUserId)
+);
+
+};
+
+
+
+
+export const removeActiveChat = (
+ userId
+)=>{
+
+activeChats.delete(
+ userId
+);
+
+};
+
+
+
+
+
+export const getActiveChat = (
+ userId
+)=>{
+
+return activeChats.get(
+ userId
+);
+
+};
+
+----------------------------------- config/redis.js --------------------------
+import { createClient } from "redis";
+
+const redisURL = process.env.REDIS_URL;
+
+
+if (!redisURL) {
+  throw new Error(
+    "❌ REDIS_URL missing in environment variables"
+  );
+}
+
+
+
+export const redisClient = createClient({
+  url: redisURL,
+
+  socket:{
+    reconnectStrategy:(retries)=>{
+
+      console.log(
+        `🔄 Redis reconnect attempt: ${retries}`
+      );
+
+
+      if(retries > 10){
+
+        return new Error(
+          "Redis reconnect failed"
+        );
+
+      }
+
+
+      return Math.min(
+        retries * 100,
+        3000
+      );
+
+    }
+  }
+
+});
+
+
+
+export const pubClient =
+createClient({
+  url:redisURL
+});
+
+
+
+export const subClient =
+pubClient.duplicate();
+
+
+
+
+redisClient.on(
+  "ready",
+  ()=>{
+    console.log(
+      "🟢 Redis Main Client Ready"
+    );
+  }
+);
+
+
+
+redisClient.on(
+  "error",
+  (err)=>{
+    console.error(
+      "❌ Redis Main Client Error:",
+      err.message
+    );
+  }
+);
+
+
+
+pubClient.on(
+  "ready",
+  ()=>{
+    console.log(
+      "🟢 Redis Pub Client Ready"
+    );
+  }
+);
+
+
+
+subClient.on(
+  "ready",
+  ()=>{
+    console.log(
+      "🟢 Redis Sub Client Ready"
+    );
+  }
+);
+
+
+
+
+export const connectRedis = async()=>{
+
+try{
+
+
+await Promise.all([
+
+ redisClient.connect(),
+
+ pubClient.connect(),
+
+ subClient.connect()
+
+]);
+
+
+
+console.log(
+"🚀 Redis Connected Successfully"
+);
+
+
+
+}catch(error){
+
+
+console.error(
+"❌ Redis Connection Failed:",
+error.message
+);
+
+
+
+process.exit(1);
+
+
+
+}
+
+
+};
+------------------------------------------ services/presence.service.js -----------------------------
+import {
+  redisClient
+} from "../config/redis.js";
+
+import {
+  redisKeys
+} from "../utils/redisKeys.js";
+
+
+
+const PRESENCE_EXPIRE =
+  60 * 60 * 24;
+
+
+
+export const setUserOnline =
+async (
+  userId,
+  socketId
+)=>{
+
+
+  const data = {
+
+    socketId,
+
+    status:
+      "online",
+
+    lastSeen:
+      new Date()
+      .toISOString(),
+
+  };
+
+
+
+  await redisClient.set(
+
+    redisKeys.userPresence(userId),
+
+    JSON.stringify(data),
+
+    {
+      EX:
+      PRESENCE_EXPIRE
+    }
+
+  );
+
+
+
+  await redisClient.sAdd(
+
+    redisKeys.onlineUsers,
+
+    userId
+
+  );
+
+
+};
+
+
+
+
+
+export const setUserOffline =
+async (
+ userId
+)=>{
+
+
+ await redisClient.del(
+
+   redisKeys.userPresence(userId)
+
+ );
+
+
+ await redisClient.sRem(
+
+   redisKeys.onlineUsers,
+
+   userId
+
+ );
+
+
+};
+
+
+
+
+
+export const getUserPresence =
+async(
+ userId
+)=>{
+
+
+ const data =
+ await redisClient.get(
+
+  redisKeys.userPresence(userId)
+
+ );
+
+
+ if(!data){
+
+  return null;
+
+ }
+
+
+ return JSON.parse(data);
+
+
+};
+
+
+
+
+
+export const getOnlineUsers =
+async()=>{
+
+
+ const users =
+ await redisClient.sMembers(
+
+   redisKeys.onlineUsers
+
+ );
+
+
+ return users;
+
+
+};
+
+----------------------------------- utils/redisKeys.js ----------------------------------
+export const redisKeys = {
+
+  userPresence: (userId) =>
+    `presence:user:${userId}`,
+
+
+  onlineUsers:
+    "presence:online-users",
+
+
+};
+
+--------------------------------------------- middleware/socketAuth.js ---------------------------
+import jwt from "jsonwebtoken";
+
+
+const socketAuth = (
+  socket,
+  next
+) => {
+
+  try {
+
+    const token =
+      socket.handshake.auth?.token ||
+      socket.handshake.headers?.authorization?.replace(
+        "Bearer ",
+        ""
+      ) ||
+      socket.handshake.query?.token;
+
+
+    if (!token) {
+
+      return next(
+        new Error(
+          "Authentication token missing"
+        )
+      );
+
+    }
+
+
+    const jwtSecret =
+      process.env.JWT_SECRET;
+
+
+    if (!jwtSecret) {
+
+      console.error(
+        "❌ JWT_SECRET missing in environment"
+      );
+
+      return next(
+        new Error(
+          "JWT configuration missing"
+        )
+      );
+
+    }
+
+
+    let decoded;
+
+
+    try {
+
+      decoded =
+        jwt.verify(
+          token,
+          jwtSecret
+        );
+
+    }
+    catch(error){
+
+
+      if(
+        error.name === "TokenExpiredError"
+      ){
+
+        return next(
+          new Error(
+            "Authentication token expired"
+          )
+        );
+
+      }
+
+
+      if(
+        error.name === "JsonWebTokenError"
+      ){
+
+        return next(
+          new Error(
+            "Invalid authentication token"
+          )
+        );
+
+      }
+
+
+      throw error;
+
+    }
+
+
+
+    const {
+      userId,
+      sessionId
+    } = decoded;
+
+
+
+    if(
+      !userId ||
+      !sessionId
+    ){
+
+      return next(
+        new Error(
+          "Invalid token payload"
+        )
+      );
+
+    }
+
+
+
+    socket.user = {
+
+      userId: String(userId),
+
+      sessionId: String(sessionId),
+
+    };
+
+
+
+    return next();
+
+
+  }
+  catch(error){
+
+
+    console.error(
+      "❌ Socket authentication failed:",
+      error.message
+    );
+
+
+    return next(
+      new Error(
+        "Socket authentication failed"
+      )
+    );
+
+
+  }
+
+};
+
+
+export default socketAuth;
+----------------------------------- package.json -----------------------
+{
+  "name": "realtime-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "redis": "^6.1.0",
+    "socket.io": "^4.8.3"
+  }
+}
