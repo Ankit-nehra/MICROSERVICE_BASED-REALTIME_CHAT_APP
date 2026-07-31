@@ -57,7 +57,7 @@ export const registerUser = async ({
 
   // create user profile in user-service
   await axios.post(
-    "http://user-service:5002/api/users/profile",
+    "https://microservice-based-realtime-chat-app-fa3q.onrender.com/api/users/profile",
     {
       userId: user._id.toString(),
       name,
