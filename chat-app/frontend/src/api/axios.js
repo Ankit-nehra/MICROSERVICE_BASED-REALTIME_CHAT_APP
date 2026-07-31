@@ -2,7 +2,7 @@ import axios from "axios";
 import useAuthStore from "../store/auth.store";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://microservice-based-realtime-chat-app-ruy7.onrender.com/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
