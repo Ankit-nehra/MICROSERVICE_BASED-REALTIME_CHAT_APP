@@ -1,0 +1,3880 @@
+-------------------------------------- app.jsx ------------------------------------------
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { useEffect } from "react";
+
+import { socket } from "./socket/socket";
+
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import HomePage from "./pages/Home";
+import ChatPage from "./pages/ChatPage";
+import Welcome from "./pages/Welcome";
+import useAuthStore from "./store/auth.store";
+
+function App() {
+const isAuthenticated = useAuthStore(
+  (state) => state.isAuthenticated
+);
+
+  // ✅ CONNECT ONLY ON LOGIN
+  useEffect(()=>{
+
+if(isAuthenticated){
+
+ const token =
+ useAuthStore.getState().token;
+
+
+ socket.auth={
+  token
+ };
+
+
+ if(!socket.connected){
+  socket.connect();
+ }
+
+}
+
+},[isAuthenticated]);
+
+useEffect(() => {
+  socket.on("connect", () => {
+    console.log("✅ Connected", socket.id);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ Disconnected");
+  });
+
+  return () => {
+    socket.off("connect");
+    socket.off("disconnect");
+  };
+}, []);
+  return (
+    <>
+      <Toaster position="top-right" />
+
+      <Routes>
+
+        {/* ✅ PUBLIC WELCOME PAGE */}
+        <Route
+          path="/"
+          element={
+           isAuthenticated ? <Navigate to="/home" /> : <Welcome />
+           }
+        />
+
+        {/* ✅ AUTH PAGES */}
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/home" /> : <LoginPage />
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? <Navigate to="/home" /> : <RegisterPage />
+          }
+        />
+
+        {/* ✅ PROTECTED HOME */}
+        <Route
+          path="/home"
+          element={
+            isAuthenticated ? <HomePage /> : <Navigate to="/login" />
+          }
+        />
+
+        {/* ✅ PROTECTED CHAT */}
+        <Route
+          path="/chat/:id"
+          element={
+            isAuthenticated ? <ChatPage /> : <Navigate to="/login" />
+          }
+        />
+
+        {/* ✅ FALLBACK ROUTE */}
+        <Route
+          path="*"
+          element={<Navigate to="/" />}
+        />
+      </Routes>
+    </>
+  );
+}
+
+export default App;
+
+
+-------------------------------------- socket/socket.js ------------------------
+import { io } from "socket.io-client";
+
+
+export const socket = io(
+  "http://localhost:5004",
+  {
+    autoConnect:false,
+
+    transports:[
+      "websocket"
+    ],
+
+    auth:{
+      token:null
+    },
+
+    reconnection:true,
+
+    reconnectionAttempts:5
+  }
+);
+---------------------------------------- pages/ChatPage.jsx -----------------------------------
+
+import {
+  useEffect,
+  useState,
+  useRef
+} from "react";
+
+
+import {
+  useParams,
+  useNavigate
+} from "react-router-dom";
+
+
+import {
+  sendMessage as sendMessageApi,
+  getMessages,
+  markMessagesRead
+} from "../api/chat.api";
+
+
+import {
+  getUserProfile
+} from "../api/user.api";
+
+
+import {
+  socket
+} from "../socket/socket";
+
+
+import useAuthStore from "../store/auth.store";
+
+import useChatStore from "../store/chat.store";
+
+
+import ProfileDialog from "../components/ProfileDialog";
+
+
+
+
+
+export default function ChatPage(){
+
+
+const {
+ id:receiverId
+}=useParams();
+
+
+
+const navigate =
+useNavigate();
+
+
+
+
+
+const user =
+useAuthStore(
+state=>state.user
+);
+
+
+
+const userId =
+String(
+ user?.userId ||
+ user?._id
+);
+
+
+
+const name =
+user?.name ||
+user?.email;
+
+
+
+const avatar =
+user?.avatar || "";
+
+
+
+
+
+const messages =
+useChatStore(
+state=>state.messages
+);
+
+
+
+const addMessage =
+useChatStore(
+state=>state.addMessage
+);
+
+
+
+const setMessages =
+useChatStore(
+state=>state.setMessages
+);
+
+
+
+
+
+const [message,setMessage] =
+useState("");
+
+
+
+const [onlineUsers,setOnlineUsers] =
+useState([]);
+
+
+
+const [receiver,setReceiver] =
+useState(null);
+
+
+
+const [profileOpen,setProfileOpen] =
+useState(false);
+
+
+
+const bottomRef =
+useRef(null);
+
+
+
+
+
+
+
+
+
+// AVATAR COMPONENT
+
+
+const Avatar = ({
+ user,
+ size="w-12 h-12"
+})=>{
+
+
+const [imageError,setImageError] =
+useState(false);
+
+
+
+if(
+user?.avatar &&
+!imageError
+){
+
+return (
+
+<img
+
+src={
+user.avatar
+}
+
+alt={
+user.name
+}
+
+onError={()=>
+setImageError(true)
+}
+
+className={`
+${size}
+rounded-full
+object-cover
+border
+border-white/20
+`}
+
+/>
+
+);
+
+}
+
+
+
+return (
+
+<div
+
+className={`
+${size}
+rounded-full
+bg-gradient-to-br
+from-blue-500
+via-purple-500
+to-pink-500
+flex
+items-center
+justify-center
+font-bold
+text-xl
+shadow-lg
+`}
+
+>
+
+
+{
+
+user?.name
+?.charAt(0)
+?.toUpperCase()
+
+||
+
+user?.email
+?.charAt(0)
+?.toUpperCase()
+
+||
+
+"U"
+
+}
+
+
+</div>
+
+);
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+// LOAD MESSAGES
+
+
+useEffect(()=>{
+
+
+const loadMessages =
+async()=>{
+
+
+try{
+
+
+const res =
+await getMessages(
+receiverId
+);
+
+
+
+setMessages(
+
+res.data.data ||
+
+[]
+
+);
+
+
+
+await markMessagesRead(
+receiverId
+);
+
+
+
+}
+catch(error){
+
+
+console.log(
+"Messages loading error",
+error
+);
+
+
+}
+
+
+};
+
+
+
+loadMessages();
+
+
+
+},[
+receiverId,
+userId
+]);
+
+
+
+
+
+
+
+
+
+
+
+
+// LOAD RECEIVER PROFILE
+
+
+useEffect(()=>{
+
+
+const loadReceiver =
+async()=>{
+
+
+try{
+
+
+const res =
+await getUserProfile(
+receiverId
+);
+
+
+
+const profile =
+res.data.data ||
+res.data;
+
+
+
+setReceiver({
+
+...profile,
+
+
+chatUserId:
+
+profile.userId ||
+profile._id
+
+
+});
+
+
+
+}
+catch(error){
+
+
+console.log(
+"Receiver profile error",
+error
+);
+
+
+}
+
+
+};
+
+
+
+loadReceiver();
+
+
+
+},[
+receiverId
+]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+// SOCKET
+
+
+useEffect(()=>{
+
+
+if(!userId)
+return;
+
+
+
+
+socket.auth={
+token:
+useAuthStore.getState().token
+};
+
+
+
+socket.emit(
+"join",
+{
+name,
+avatar
+}
+);
+
+
+
+
+
+
+
+const onlineHandler =
+(users)=>{
+
+
+setOnlineUsers(
+users
+);
+
+
+};
+
+
+
+
+
+
+
+const messageHandler =
+(msg)=>{
+
+
+
+const senderId =
+String(
+msg.senderId?._id ||
+msg.senderId
+);
+
+
+
+const msgReceiverId =
+String(
+msg.receiverId?._id ||
+msg.receiverId
+);
+
+
+
+const currentReceiver =
+String(
+receiver?.chatUserId ||
+receiverId
+);
+
+
+
+
+if(
+
+(
+senderId===userId &&
+msgReceiverId===currentReceiver
+)
+
+||
+
+(
+senderId===currentReceiver &&
+msgReceiverId===userId
+)
+
+){
+
+
+addMessage(
+msg
+);
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+socket.on(
+"onlineUsers",
+onlineHandler
+);
+
+
+
+socket.on(
+"receiveMessage",
+messageHandler
+);
+
+
+
+
+
+
+
+return()=>{
+
+
+socket.emit(
+"leaveChat",
+{
+userId
+}
+);
+
+
+
+socket.off(
+"onlineUsers",
+onlineHandler
+);
+
+
+
+socket.off(
+"receiveMessage",
+messageHandler
+);
+
+
+
+};
+
+
+
+},[
+userId,
+receiverId,
+receiver?.chatUserId
+]);
+
+
+
+
+
+
+
+
+
+
+
+// ACTIVE CHAT
+
+useEffect(()=>{
+
+if(
+!receiver ||
+!userId
+)
+return;
+
+
+socket.emit(
+"activeChat",
+{
+ chatUserId:
+ receiver.chatUserId
+});
+
+
+socket.emit(
+"openChat",
+{
+ chatUserId:
+ receiver.chatUserId
+});
+
+
+},[
+receiver,
+userId
+]);
+
+
+
+
+
+
+
+
+
+// AUTO SCROLL
+
+
+useEffect(()=>{
+
+
+bottomRef.current
+?.scrollIntoView({
+behavior:"smooth"
+});
+
+
+
+},[
+messages
+]);
+
+
+
+// SEND MESSAGE
+
+
+const sendMessage =
+async()=>{
+
+
+if(
+!message.trim() ||
+!receiver
+)
+return;
+
+
+
+try{
+
+
+const res =
+await sendMessageApi({
+
+receiverId:
+receiver.chatUserId,
+
+
+content:
+message.trim()
+
+});
+
+
+
+const savedMessage =
+res.data.data ||
+res.data;
+
+
+
+addMessage(
+savedMessage
+);
+
+
+
+socket.emit(
+"sendMessage",
+{
+ ...savedMessage,
+ senderName:name,
+ senderAvatar:avatar
+}
+);
+
+
+
+setMessage("");
+
+
+
+}
+catch(error){
+
+
+console.log(
+"Send message error",
+error
+);
+
+
+}
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+// ONLINE STATUS
+
+
+const isOnline =
+onlineUsers.some(
+
+u=>
+
+String(u.userId)
+===
+String(receiver?.chatUserId)
+
+);
+
+
+
+
+
+
+
+
+
+return (
+
+<div
+
+className="
+h-[100dvh]
+flex
+flex-col
+bg-gradient-to-br
+from-gray-950
+via-black
+to-gray-900
+text-white
+"
+
+>
+
+
+
+
+
+
+
+
+{/* HEADER */}
+
+
+<div
+
+className="
+sticky
+top-0
+z-20
+px-4
+py-3
+bg-white/5
+backdrop-blur-xl
+border-b
+border-white/10
+shadow-xl
+"
+
+>
+
+
+<div
+
+className="
+flex
+items-center
+justify-between
+"
+
+>
+
+
+
+
+
+<button
+
+onClick={()=>
+navigate("/home")
+}
+
+className="
+w-10
+h-10
+rounded-full
+bg-white/10
+hover:bg-white/20
+transition
+flex
+items-center
+justify-center
+text-xl
+"
+
+>
+
+←
+
+</button>
+
+
+
+
+
+
+
+
+
+<div
+
+onClick={()=>
+setProfileOpen(true)
+}
+
+className="
+flex
+items-center
+gap-3
+cursor-pointer
+px-4
+py-2
+rounded-2xl
+hover:bg-white/5
+transition
+"
+
+>
+
+
+<Avatar
+
+user={
+receiver
+}
+
+size="
+w-12
+h-12
+"
+
+/>
+
+
+
+
+
+<div>
+
+
+<h2
+
+className="
+font-semibold
+text-lg
+"
+
+>
+
+{
+receiver?.name ||
+"User"
+}
+
+</h2>
+
+
+
+
+
+<div
+
+className="
+flex
+items-center
+gap-2
+text-xs
+"
+
+>
+
+
+<span
+
+className={
+
+isOnline
+
+?
+
+"text-green-400"
+
+:
+
+"text-gray-400"
+
+}
+
+>
+
+{
+
+isOnline
+
+?
+
+"🟢 Online"
+
+:
+
+"⚫ Offline"
+
+}
+
+</span>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div
+
+className="
+w-10
+"
+
+>
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+{/* MESSAGES */}
+
+
+<div
+
+className="
+flex-1
+overflow-y-auto
+p-4
+space-y-3
+"
+
+>
+
+
+{
+
+messages.map(
+
+(msg)=>{
+
+
+const senderId =
+
+String(
+msg.senderId?._id ||
+msg.senderId
+);
+
+
+
+const mine =
+senderId===userId;
+
+
+
+return (
+
+
+<div
+
+key={
+msg._id
+}
+
+className={`
+flex
+${mine ? "justify-end":"justify-start"}
+`}
+
+>
+
+
+<div
+
+className={`
+
+max-w-[75%]
+
+px-4
+
+py-3
+
+rounded-2xl
+
+shadow-lg
+
+text-sm
+
+break-words
+
+${
+
+mine
+
+?
+
+"bg-gradient-to-r from-blue-600 to-purple-600 rounded-br-md"
+
+:
+
+"bg-gray-800 border border-white/10 rounded-bl-md"
+
+}
+
+`}
+
+>
+
+{
+msg.content
+}
+
+
+
+<div
+
+className="
+text-[10px]
+text-gray-300
+mt-1
+text-right
+opacity-70
+"
+
+>
+
+{
+new Date(
+msg.createdAt
+)
+.toLocaleTimeString(
+[],
+{
+hour:"2-digit",
+minute:"2-digit"
+}
+)
+
+}
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+);
+
+
+}
+
+)
+
+}
+
+
+
+
+<div ref={bottomRef}/>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+{/* MESSAGE INPUT */}
+
+
+<div
+
+className="
+p-4
+border-t
+border-white/10
+bg-black/40
+backdrop-blur-xl
+"
+
+>
+
+
+<div
+
+className="
+flex
+gap-3
+items-center
+"
+
+>
+
+
+<input
+
+
+value={
+message
+}
+
+
+onChange={
+e=>
+setMessage(
+e.target.value
+)
+}
+
+
+onKeyDown={
+e=>{
+
+if(
+e.key==="Enter"
+)
+sendMessage();
+
+}
+
+}
+
+
+placeholder="
+Type a message...
+"
+
+
+className="
+flex-1
+bg-white/10
+border
+border-white/10
+rounded-2xl
+px-5
+py-3
+outline-none
+focus:ring-2
+focus:ring-blue-500
+transition
+"
+
+
+/>
+
+
+
+
+
+
+
+<button
+
+
+onClick={
+sendMessage
+}
+
+
+className="
+px-6
+py-3
+rounded-2xl
+bg-gradient-to-r
+from-blue-600
+to-purple-600
+hover:scale-105
+transition
+font-semibold
+shadow-lg
+"
+
+>
+
+Send 🚀
+
+
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+{/* PROFILE */}
+
+
+<ProfileDialog
+
+
+userId={
+receiver?.chatUserId
+}
+
+
+isOpen={
+profileOpen
+}
+
+
+onClose={
+()=>
+setProfileOpen(false)
+}
+
+
+/>
+
+
+
+
+
+
+
+</div>
+
+
+);
+
+
+}
+
+---------------------------------------- pages/home.jsx -----------------------------------
+
+import {
+  useEffect,
+  useState
+} from "react";
+
+
+import {
+  socket
+} from "../socket/socket";
+
+
+import {
+  useNavigate
+} from "react-router-dom";
+
+
+import {
+  getUsers,
+  getMyProfile
+} from "../api/user.api";
+
+
+import useAuthStore from "../store/auth.store";
+
+
+import ProfileDialog from "../components/ProfileDialog";
+
+
+
+
+
+export default function HomePage(){
+
+
+
+const [allUsers,setAllUsers] =
+useState([]);
+
+
+
+const [onlineUsers,setOnlineUsers] =
+useState([]);
+
+
+
+const [unreadCounts,setUnreadCounts] =
+useState({});
+
+
+
+const [notifications,setNotifications] =
+useState([]);
+
+
+
+const [search,setSearch] =
+useState("");
+
+
+
+const [profileOpen,setProfileOpen] =
+useState(false);
+
+
+
+
+const navigate =
+useNavigate();
+
+
+
+
+const logout =
+useAuthStore(
+state=>state.logout
+);
+
+
+
+const user =
+useAuthStore(
+state=>state.user
+);
+
+
+
+const token =
+useAuthStore(
+state=>state.token
+);
+
+
+
+const setUser =
+useAuthStore(
+state=>state.setUser
+);
+
+
+
+const userId =
+user?.userId ||
+user?._id;
+
+
+
+
+
+
+
+// ===============================
+// SYNC PROFILE AFTER LOGIN
+// ===============================
+
+
+useEffect(()=>{
+
+
+const syncProfile =
+async()=>{
+
+
+try{
+
+
+const res =
+await getMyProfile();
+
+
+
+const profile =
+res.data.data ||
+res.data;
+
+
+
+setUser(
+profile
+);
+
+
+
+// if(socket.connected){
+
+// socket.emit(
+// "join",
+// {
+
+// name:
+// profile.name,
+
+
+// avatar:
+// profile.avatar || ""
+
+// }
+
+// );
+
+// }
+
+
+
+}
+
+catch(error){
+
+console.log(
+"Profile sync error",
+error
+);
+
+}
+
+
+};
+
+
+
+if(token){
+
+syncProfile();
+
+}
+
+
+
+},[token]);
+
+
+
+
+
+
+
+// ===============================
+// AVATAR COMPONENT
+// ===============================
+
+
+const Avatar =
+({
+ user
+})=>{
+
+
+const [imageError,setImageError] =
+useState(false);
+
+
+
+if(
+user?.avatar &&
+!imageError
+){
+
+
+return (
+
+<img
+
+src={
+user.avatar
+}
+
+
+alt={
+user.name
+}
+
+
+onError={()=>
+setImageError(true)
+}
+
+
+className="
+w-12
+h-12
+rounded-full
+object-cover
+border
+border-white/10
+"
+
+/>
+
+);
+
+
+}
+
+
+
+
+return (
+
+<div
+
+className="
+w-12
+h-12
+rounded-full
+bg-gradient-to-br
+from-blue-500
+to-purple-600
+flex
+items-center
+justify-center
+font-bold
+text-xl
+"
+
+>
+
+
+{
+
+user?.name
+?.charAt(0)
+?.toUpperCase()
+
+||
+
+user?.email
+?.charAt(0)
+?.toUpperCase()
+
+||
+
+"U"
+
+}
+
+
+</div>
+
+
+);
+
+
+};
+
+
+
+
+// ===============================
+// OPEN CHAT FROM NOTIFICATION
+// ===============================
+
+
+const openNotificationChat =
+(notification)=>{
+
+
+if(!notification?.senderId)
+return;
+
+
+
+// remove from redis
+
+socket.emit(
+"openChat",
+{
+chatUserId:
+notification.senderId
+}
+);
+
+
+
+// remove local notification
+
+setNotifications(
+prev=>
+
+prev.filter(
+n=>
+n.messageId !==
+notification.messageId
+)
+
+);
+
+
+
+setUnreadCounts(
+prev=>({
+
+...prev,
+
+[notification.senderId]:0
+
+})
+
+);
+
+
+
+navigate(
+`/chat/${notification.senderId}`
+);
+
+
+};
+
+
+
+
+
+
+// ===============================
+// CUSTOM NOTIFICATION COMPONENT
+// ===============================
+
+
+const NotificationContainer =
+()=>{
+
+
+return (
+
+<div
+
+className="
+fixed
+top-5
+right-5
+z-[100]
+space-y-4
+"
+
+>
+
+
+{
+
+notifications.map(
+(notification)=>{
+
+
+return (
+
+<div
+
+key={
+notification.messageId
+}
+
+
+onClick={()=>{
+
+openNotificationChat(
+notification
+);
+
+}}
+
+
+className="
+w-96
+bg-gray-900/95
+backdrop-blur-xl
+border
+border-white/10
+shadow-2xl
+rounded-2xl
+p-4
+flex
+gap-4
+items-start
+animate-slide-in
+cursor-pointer
+"
+
+>
+
+
+
+
+
+{
+
+notification.senderAvatar ?
+
+
+<img
+
+src={
+notification.senderAvatar
+}
+
+
+alt={
+notification.senderName
+}
+
+
+className="
+w-12
+h-12
+rounded-full
+object-cover
+border
+border-white/20
+flex-shrink-0
+"
+
+/>
+
+
+:
+
+
+<div
+
+className="
+w-12
+h-12
+rounded-full
+bg-gradient-to-br
+from-blue-500
+to-purple-600
+flex
+items-center
+justify-center
+font-bold
+text-xl
+flex-shrink-0
+"
+
+>
+
+
+{
+
+notification.senderName
+?.charAt(0)
+?.toUpperCase()
+
+||
+
+
+"U"
+
+}
+
+
+</div>
+
+
+}
+
+
+
+
+
+
+<div
+
+className="
+flex-1
+"
+
+>
+
+
+
+<div
+
+className="
+flex
+justify-between
+items-start
+"
+
+>
+
+
+<div>
+
+
+<p
+
+className="
+font-semibold
+text-white
+"
+
+>
+
+{
+
+notification.senderName
+
+}
+
+</p>
+
+
+<p
+
+className="
+text-xs
+text-gray-400
+mt-1
+"
+
+>
+
+New message
+
+</p>
+
+
+</div>
+
+
+
+
+
+<button
+
+
+onClick={(e)=>{
+
+
+e.stopPropagation();
+
+
+
+setNotifications(
+prev=>
+
+prev.filter(
+n=>
+n.messageId !==
+notification.messageId
+)
+
+);
+
+
+
+}}
+
+
+
+className="
+text-gray-400
+hover:text-white
+text-lg
+"
+
+>
+
+✕
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+<p
+
+className="
+text-sm
+text-gray-300
+mt-3
+break-words
+"
+
+>
+
+{
+
+notification.content
+
+}
+
+</p>
+
+
+
+
+
+<p
+
+className="
+text-xs
+text-gray-500
+mt-3
+"
+
+>
+
+{
+new Date(
+notification.createdAt
+)
+.toLocaleTimeString([],{
+
+hour:"2-digit",
+
+minute:"2-digit"
+
+})
+}
+
+</p>
+
+
+
+
+
+</div>
+
+
+
+
+</div>
+
+
+);
+
+
+}
+
+)
+
+
+}
+
+
+
+</div>
+
+
+);
+
+
+};
+  
+// ===============================
+// LOAD USERS
+// ===============================
+
+
+useEffect(()=>{
+
+
+const loadUsers =
+async()=>{
+
+
+try{
+
+
+const res =
+await getUsers();
+
+
+
+setAllUsers(
+
+res.data.data ||
+
+res.data.users ||
+
+res.data
+
+);
+
+
+
+}
+
+catch(error){
+
+console.log(
+"Users loading error",
+error
+);
+
+}
+
+
+};
+
+
+
+loadUsers();
+
+
+
+},[]);
+
+
+
+
+
+
+// ===============================
+// SOCKET CONNECTION
+// ===============================
+
+
+useEffect(()=>{
+
+
+if(
+!token ||
+!userId
+)
+return;
+
+
+
+socket.auth={
+token
+};
+
+
+
+
+
+socket.emit(
+"join",
+{
+
+name:
+user?.name ||
+user?.email,
+
+
+avatar:
+user?.avatar || ""
+
+}
+
+);
+
+
+
+
+
+
+const onlineHandler =
+(users)=>{
+
+
+setOnlineUsers(
+users
+);
+
+
+};
+
+
+
+
+
+
+
+const notificationHandler =
+(data)=>{
+
+
+const notification = {
+
+
+messageId:
+data.messageId,
+
+
+senderId:
+data.senderId,
+
+
+receiverId:
+data.receiverId,
+
+
+senderName:
+data.senderName,
+
+
+senderAvatar:
+data.senderAvatar,
+
+
+content:
+data.content,
+
+
+createdAt:
+data.createdAt
+
+};
+
+
+
+
+setNotifications(
+prev=>{
+
+
+const exists =
+prev.some(
+n=>
+n.messageId ===
+notification.messageId
+);
+
+
+
+if(exists)
+return prev;
+
+
+
+return [
+...prev,
+notification
+];
+
+
+}
+
+);
+
+
+
+
+
+setUnreadCounts(
+prev=>({
+
+...prev,
+
+
+[notification.senderId]:
+
+(prev[notification.senderId] || 0)
++
+1
+
+
+})
+
+);
+
+
+};
+
+
+
+
+
+
+const pendingNotificationHandler =
+(list)=>{
+
+
+const notifications = [];
+
+const unread = {};
+
+
+
+
+list.forEach(
+(sender)=>{
+
+
+sender.messages.forEach(
+(msg)=>{
+
+
+notifications.push({
+
+messageId:
+msg.messageId,
+
+
+senderId:
+sender.senderId,
+
+
+receiverId:
+msg.receiverId,
+
+
+senderName:
+sender.senderName,
+
+
+senderAvatar:
+sender.senderAvatar,
+
+
+content:
+msg.content,
+
+
+createdAt:
+msg.createdAt
+
+
+});
+
+
+}
+
+);
+
+
+
+unread[sender.senderId] =
+sender.messages.length;
+
+
+
+}
+
+);
+
+
+
+
+setNotifications(
+notifications
+);
+
+
+setUnreadCounts(
+unread
+);
+
+
+
+};
+
+
+
+
+
+
+
+socket.on(
+"onlineUsers",
+onlineHandler
+);
+
+
+
+socket.on(
+"newNotification",
+notificationHandler
+);
+
+
+
+socket.on(
+"pendingNotifications",
+pendingNotificationHandler
+);
+
+
+
+
+
+
+
+return ()=>{
+
+
+socket.off(
+"onlineUsers",
+onlineHandler
+);
+
+
+
+socket.off(
+"newNotification",
+notificationHandler
+);
+
+
+
+socket.off(
+"pendingNotifications",
+pendingNotificationHandler
+);
+
+
+
+};
+
+
+
+},[
+
+token,
+
+userId,
+
+user?.name,
+
+user?.email,
+
+user?.avatar
+
+]);
+
+
+
+
+
+
+
+// ===============================
+// OPEN NORMAL CHAT
+// ===============================
+
+
+const openChat =
+(id)=>{
+
+
+if(!id)
+return;
+
+
+
+
+navigate(
+`/chat/${id}`
+);
+
+
+
+};
+
+
+
+
+
+
+
+
+
+// ===============================
+// LOGOUT
+// ===============================
+
+
+const handleLogout =
+()=>{
+
+
+logout();
+
+
+
+navigate(
+"/login",
+{
+replace:true
+}
+);
+
+
+
+};
+
+
+
+
+
+
+
+
+// ===============================
+// ONLINE CHECK
+// ===============================
+
+
+const isOnline =
+(user)=>{
+
+
+const id =
+user.userId ||
+user._id;
+
+
+
+
+return onlineUsers.some(
+
+online=>
+
+String(online.userId)
+===
+String(id)
+
+);
+
+
+};
+
+
+
+
+
+
+
+
+// ===============================
+// FILTER USERS
+// ===============================
+
+
+const users =
+
+
+allUsers
+
+
+.filter(
+u=>{
+
+
+const id =
+u.userId ||
+u._id;
+
+
+
+return String(id)
+!==
+String(userId);
+
+
+
+}
+
+)
+
+
+
+.filter(
+u=>{
+
+
+const name =
+
+u.name
+?.toLowerCase()
+.includes(
+search.toLowerCase()
+);
+
+
+
+const email =
+
+u.email
+?.toLowerCase()
+.includes(
+search.toLowerCase()
+);
+
+
+
+return name || email;
+
+
+
+}
+
+)
+
+
+
+.sort(
+(a,b)=>{
+
+
+const ao =
+isOnline(a);
+
+
+const bo =
+isOnline(b);
+
+
+
+if(
+ao===bo
+)
+return 0;
+
+
+
+return ao ? -1 : 1;
+
+
+
+}
+
+);
+
+
+
+
+
+
+
+
+return (
+
+<div
+
+className="
+min-h-screen
+bg-gradient-to-br
+from-gray-950
+via-black
+to-gray-900
+text-white
+"
+
+>
+
+
+<NotificationContainer />
+
+
+
+
+
+
+<div
+
+className="
+sticky
+top-0
+z-10
+backdrop-blur-xl
+bg-white/5
+border-b
+border-white/10
+p-5
+flex
+justify-between
+items-center
+"
+
+>
+
+
+
+<div>
+
+
+<h1
+
+className="
+text-2xl
+font-bold
+"
+
+>
+
+💬 RealTime Chat
+
+</h1>
+
+
+
+
+<button
+
+onClick={()=>
+setProfileOpen(true)
+}
+
+
+className="
+text-sm
+text-blue-400
+hover:text-blue-300
+mt-2
+"
+
+>
+
+Welcome {
+
+user?.name ||
+
+user?.email
+
+}
+
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+
+<button
+
+onClick={handleLogout}
+
+className="
+bg-red-600
+hover:bg-red-500
+px-5
+py-2
+rounded-xl
+"
+
+>
+
+Logout
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div
+
+className="p-5"
+
+>
+
+
+<input
+
+
+value={search}
+
+
+onChange={
+
+e=>
+
+setSearch(
+e.target.value
+)
+
+}
+
+
+placeholder="Search people..."
+
+
+className="
+w-full
+p-4
+rounded-xl
+bg-white/5
+border
+border-white/10
+outline-none
+"
+
+/>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div
+
+className="
+px-5
+space-y-3
+"
+
+>
+
+
+
+{
+
+users.length===0 ?
+
+
+<div
+
+className="
+text-center
+text-gray-500
+mt-20
+"
+
+>
+
+No users found
+
+</div>
+
+
+
+:
+
+
+users.map(
+(u)=>{
+
+
+const chatUserId =
+u.userId ||
+u._id;
+
+
+
+return (
+
+
+<div
+
+
+key={
+chatUserId
+}
+
+
+
+onClick={()=>
+openChat(chatUserId)
+}
+
+
+
+className="
+cursor-pointer
+flex
+items-center
+justify-between
+bg-white/5
+border
+border-white/10
+rounded-2xl
+p-4
+hover:bg-white/10
+transition
+"
+
+>
+
+
+
+<div
+
+className="
+flex
+items-center
+gap-4
+"
+
+>
+
+
+<Avatar
+user={u}
+/>
+
+
+
+<div>
+
+
+<h3
+
+className="
+font-semibold
+text-lg
+"
+
+>
+
+{
+
+u.name ||
+
+"User"
+
+}
+
+</h3>
+
+
+
+<p
+
+className="
+text-sm
+text-gray-400
+"
+
+>
+
+{
+
+u.email
+
+}
+
+</p>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div>
+
+
+{
+
+isOnline(u)
+
+
+?
+
+
+<span
+
+className="
+text-green-400
+text-sm
+"
+
+>
+
+🟢 Online
+
+</span>
+
+
+
+:
+
+
+<span
+
+className="
+text-gray-500
+text-sm
+"
+
+>
+
+Offline
+
+</span>
+
+
+
+}
+
+
+
+
+
+
+
+{
+
+unreadCounts[chatUserId]
+
+
+&&
+
+
+<span
+
+className="
+ml-3
+bg-red-500
+px-3
+py-1
+rounded-full
+text-sm
+"
+
+>
+
+{
+
+unreadCounts[chatUserId]
+
+}
+
+
+</span>
+
+
+}
+
+
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+);
+
+
+}
+
+)
+
+
+}
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<ProfileDialog
+
+
+isOpen={
+profileOpen
+}
+
+
+
+onClose={()=>
+setProfileOpen(false)
+}
+
+
+
+/>
+
+
+
+</div>
+
+
+);
+
+
+
+}
+
+---------------------------------------- pages/LoginPage.jsx -----------------------------------
+// src/pages/LoginPage.jsx
+import { useState } from "react";
+import { useNavigate, Link ,useLocation} from "react-router-dom";
+import { login as loginApi } from "../api/auth.api";
+import toast from "react-hot-toast";
+import useAuthStore from "../store/auth.store";
+
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+const [form, setForm] = useState({
+ email: location.state?.email || "",
+ password:""
+});
+
+  const [loading, setLoading] = useState(false); // ✅ added only
+  
+const loginStore =
+useAuthStore(
+ state=>state.login
+);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+const res =
+await loginApi(form);
+
+
+
+loginStore({
+ token:res.data.data.token,
+ user:res.data.data.user
+});
+
+toast.success("Login successful 🎉");
+
+navigate("/home", { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Login failed ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white px-4 relative overflow-hidden">
+
+      {/* Glow effects */}
+      <div className="absolute w-72 h-72 bg-blue-600 rounded-full blur-3xl opacity-30 top-10 left-10"></div>
+      <div className="absolute w-72 h-72 bg-purple-600 rounded-full blur-3xl opacity-30 bottom-10 right-10"></div>
+
+      {/* Card */}
+      <div className="relative w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8">
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate("/")}
+          className="text-xs text-gray-400 hover:text-white mb-4 transition"
+        >
+          ← Back to Home
+        </button>
+
+        {/* Title */}
+        <h2 className="text-3xl font-bold text-center">
+          Welcome Back 👋
+        </h2>
+
+        <p className="text-center text-gray-400 text-sm mt-2">
+          Login to continue chatting
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+
+          <input
+            type="email"
+            value={form.email}
+            placeholder="Email"
+            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) =>
+              setForm({ ...form, password: e.target.value })
+            }
+          />
+
+          {/* ✅ ONLY CHANGE HERE */}
+          <button
+            disabled={loading}
+            className={`w-full py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/30 ${
+              loading
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-500"
+            }`}
+          >
+            {loading ? "Processing..." : "Login"}
+          </button>
+        </form>
+
+        {/* Register link */}
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-purple-400 hover:text-purple-300 font-medium"
+          >
+            Register
+          </Link>
+        </p>
+
+      </div>
+    </div>
+  );
+}
+
+---------------------------------------- pages/RegisterPage.jsx -----------------------------------
+// src/pages/RegisterPage.jsx
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { register } from "../api/auth.api";
+import toast from "react-hot-toast";
+
+export default function RegisterPage() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false); // ✅ added
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // ✅ validation
+    if (!form.name || !form.email || !form.password) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+
+  await register(form);
+
+  toast.success("Account created successfully 🚀");
+
+  navigate("/login", {
+    state:{
+      email:form.email
+    }
+  });
+
+
+}
+catch(err){
+
+  toast.error("Registration failed ❌");
+
+} finally {
+      setLoading(false); // ✅ stays in processing until done
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white px-4 relative overflow-hidden">
+
+      {/* Glow effects */}
+      <div className="absolute w-72 h-72 bg-green-600 rounded-full blur-3xl opacity-20 top-10 left-10"></div>
+      <div className="absolute w-72 h-72 bg-purple-600 rounded-full blur-3xl opacity-20 bottom-10 right-10"></div>
+
+      {/* Card */}
+      <div className="relative w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8">
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate("/")}
+          className="text-xs text-gray-400 hover:text-white mb-4 transition"
+        >
+          ← Back to Home
+        </button>
+
+        {/* Title */}
+        <h2 className="text-3xl font-bold text-center">
+          Create Account ✨
+        </h2>
+
+        <p className="text-center text-gray-400 text-sm mt-2">
+          Join RealTime Chat and start connecting
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+
+          <input
+            value={form.name} // ✅ controlled
+            placeholder="Name"
+            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+          />
+
+          <input
+            value={form.email} // ✅ controlled
+            type="email"
+            placeholder="Email"
+            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
+          />
+
+          <input
+            value={form.password} // ✅ controlled
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            onChange={(e) =>
+              setForm({ ...form, password: e.target.value })
+            }
+          />
+
+          {/* ✅ updated button only */}
+          <button
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 transition font-semibold shadow-lg shadow-purple-600/30 disabled:bg-gray-600 disabled:cursor-not-allowed"
+          >
+            {loading ? "Processing..." : "Register"}
+          </button>
+        </form>
+
+        {/* Login link */}
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-blue-400 hover:text-blue-300 font-medium"
+          >
+            Login
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+---------------------------------------- pages/Welcome.jsx -----------------------------------
+import { Link } from "react-router-dom";
+
+export default function Welcome() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white px-4">
+      
+      {/* Glow background effects */}
+      <div className="absolute w-72 h-72 bg-purple-600 rounded-full blur-3xl opacity-30 top-10 left-10"></div>
+      <div className="absolute w-72 h-72 bg-blue-600 rounded-full blur-3xl opacity-30 bottom-10 right-10"></div>
+
+      {/* Main Card */}
+      <div className="relative w-full max-w-2xl text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-10">
+        
+        {/* Logo / Title */}
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+          💬 RealTime Chat
+        </h1>
+
+        <p className="mt-4 text-gray-300 text-sm md:text-base">
+          Connect instantly. Chat in real-time. Stay synced across all devices.
+        </p>
+
+        {/* Feature highlights */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs md:text-sm text-gray-400">
+          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+            ⚡ Instant Messaging
+          </div>
+          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+            🔒 Secure Chats
+          </div>
+          <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+            🌐 Global Connectivity
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-10 flex flex-col md:flex-row gap-4 justify-center">
+          
+          <Link
+            to="/login"
+            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition font-medium shadow-lg shadow-blue-600/30"
+          >
+            Login
+          </Link>
+
+          <Link
+            to="/register"
+            className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 transition font-medium shadow-lg shadow-purple-600/30"
+          >
+            Register
+          </Link>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-xs text-gray-500">
+          Built with MERN Stack • Real-time powered by Socket.io
+        </p>
+      </div>
+    </div>
+  );
+}
+------------------------------------ store/auth.store.js ------------------------------
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { socket } from "../socket/socket";
+
+const useAuthStore = create(
+  persist(
+
+    (set)=>({
+
+      token:null,
+
+      user:null,
+
+      isAuthenticated:false,
+
+
+
+      login:({token,user})=>{
+
+        socket.auth={
+          token
+        };
+
+        if(!socket.connected){
+
+          socket.connect();
+
+        }
+
+        set({
+
+          token,
+
+          user,
+
+          isAuthenticated:true
+
+        });
+
+      },
+
+
+
+      // ✅ NEW
+      setUser:(user)=>{
+
+        set({
+          user
+        });
+
+      },
+
+
+
+      setToken:(token)=>{
+
+        socket.auth={
+          token
+        };
+
+        set({
+          token
+        });
+
+      },
+
+
+
+      logout:()=>{
+
+        if(socket.connected){
+
+          socket.disconnect();
+
+        }
+
+        socket.auth={
+
+          token:null
+
+        };
+
+        localStorage.removeItem(
+          "auth-storage"
+        );
+
+        set({
+
+          token:null,
+
+          user:null,
+
+          isAuthenticated:false
+
+        });
+
+      }
+
+    }),
+
+    {
+
+      name:"auth-storage",
+
+      version:1,
+
+      partialize:(state)=>({
+
+        token:state.token,
+
+        user:state.user,
+
+        isAuthenticated:
+          state.isAuthenticated
+
+      })
+
+    }
+
+  )
+
+);
+
+export default useAuthStore;
+------------------------------------------- chat.store.js --------------------------------
+import {create} from "zustand";
+
+
+const useChatStore=create((set)=>({
+
+messages:[],
+
+setMessages:(messages)=>set({
+ messages
+}),
+
+
+addMessage:(message)=>{
+
+set(state=>{
+
+const exists =
+state.messages.some(
+m =>
+String(m._id) === String(message._id)
+);
+
+if(exists)
+return state;
+
+
+return {
+messages:[
+...state.messages,
+message
+]
+}
+
+})
+
+},
+
+
+clearMessages:()=>set({
+ messages:[]
+})
+
+}));
+
+export default useChatStore;
+------------------------------------- api/auth.api.js -----------------------------
+import api from "./axios";
+
+
+export const register = (data) =>
+  api.post("/auth/register", data);
+
+
+export const login = (data) =>
+  api.post("/auth/login", data);
+
+
+export const logout = () =>
+  api.post("/auth/logout");
+------------------------------------- api/axios.js -----------------------------
+import axios from "axios";
+import useAuthStore from "../store/auth.store";
+
+const api = axios.create({
+  baseURL: "http://localhost:5000/api",
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Request Interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor
+api.interceptors.response.use(
+  (response) => response,
+
+  (error) => {
+
+    if (
+      error.response?.status === 401 &&
+      window.location.pathname !== "/login"
+    ) {
+
+      useAuthStore.getState().logout();
+
+      window.location.replace("/login");
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+------------------------------------- api/chat.api.js -----------------------------
+import api from "./axios";
+
+
+
+export const sendMessage = (data) =>
+  api.post(
+    "/chat/send",
+    data
+  );
+
+
+
+export const getMessages = (
+  otherUserId
+) =>
+  api.get(
+    `/chat/conversation/${otherUserId}`
+  );
+
+
+
+export const markMessagesRead = (
+  senderId
+)=>
+  api.patch(
+    "/chat/read",
+    {
+      senderId
+    }
+  );
+
+
+
+export const getUnreadCount = () =>
+  api.get(
+    "/chat/unread"
+  );
+------------------------------------- api/realTimeService.api.js -----------------------------
+import api from "./axios";
+
+export const checkRealtimeStatus = () =>
+  api.get("/realtime/health");
+------------------------------------- api/user.api.js -----------------------------
+
+
+
+import api from "./axios";
+
+
+// Get all users
+export const getUsers = () =>
+  api.get("/users");
+
+
+
+// Get current logged-in user profile
+export const getMyProfile = () =>
+  api.get("/users/me");
+
+
+
+// Get any user's profile by id
+export const getUserProfile = (
+  userId
+) =>
+  api.get(
+    `/users/${userId}`
+  );
+
+
+
+// Update current user's profile
+export const updateProfile = (
+  data
+) =>
+  api.patch(
+    "/users/profile",
+    data
+  );
+
+
+
+// Optional: online users
+export const getOnlineUsers = () =>
+  api.get("/users/online");
