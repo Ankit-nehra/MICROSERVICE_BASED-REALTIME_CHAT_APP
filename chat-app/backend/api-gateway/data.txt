@@ -1,0 +1,1264 @@
+api-gateway
+.env
+src
+│
+├── routes
+│   ├── auth.routes.js
+│   ├── user.routes.js
+│   ├── chat.routes.js
+│   └── realtime.routes.js
+│
+├── config
+│   ├── service.js
+|   ├── redis.js
+|
+|
+├── utils
+│   ├── AppError.js
+|   ├── asyncHandler.js
+|
+|
+├── proxy
+│   ├── auth.proxy.js
+│   ├── user.proxy.js
+│   ├── chat.proxy.js
+│   └── realtime.proxy.js
+│
+├── middleware
+│   ├── errorHandler.js
+│   ├── proxyError.js
+|   └── authMiddleware.js
+│
+└── server.js
+
+
+---------------------------------------- server.js ------------------------------
+import "dotenv/config";
+
+
+
+import express from "express";
+import cors from "cors";
+
+import {
+ connectRedis
+} from "./config/redis.js";
+
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import realtimeRoutes from "./routes/realtime.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
+
+import errorHandler from "./middleware/errorHandler.js";
+
+
+const app = express();
+
+
+app.use(cors());
+
+app.use(express.json());
+
+
+// Routes
+
+app.get("/health",(req,res)=>{
+res.json({
+service:"api-gateway",
+status:"running"
+});
+}
+);
+
+
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+
+app.use(
+  "/api/users",
+  userRoutes
+);
+
+
+app.use(
+  "/api/realtime",
+  realtimeRoutes
+);
+
+
+app.use(
+  "/api/chat",
+  chatRoutes
+);
+
+
+// Global Error Handler
+app.use(
+  errorHandler
+);
+
+
+
+const PORT =
+  process.env.PORT || 5000;
+
+
+
+
+
+connectRedis();
+
+
+
+app.listen(
+PORT,
+()=>{
+
+console.log(
+`🚀 API Gateway running on ${PORT}`
+);
+
+}
+);
+
+
+
+-------------------------------- routes/auth.routes.js -------------------------
+import express from "express";
+
+import {
+  registerProxy,
+  loginProxy,
+  logoutProxy,
+} from "../proxy/auth.proxy.js";
+
+
+import authMiddleware from "../middleware/authMiddleware.js";
+
+
+const router =
+express.Router();
+
+
+
+router.post(
+"/register",
+registerProxy
+);
+
+
+
+router.post(
+"/login",
+loginProxy
+);
+
+
+
+router.post(
+"/logout",
+authMiddleware,
+logoutProxy
+);
+
+
+
+export default router;
+----------------------------------- routes/chat.routes.js ------------------------
+import express from "express";
+
+
+import {
+ sendMessageProxy,
+ getConversationProxy,
+ markReadProxy,
+ unreadCountProxy,
+} from "../proxy/chat.proxy.js";
+
+
+import authMiddleware from "../middleware/authMiddleware.js";
+
+
+const router =
+express.Router();
+
+
+
+router.use(
+authMiddleware
+);
+
+
+
+router.post(
+"/send",
+sendMessageProxy
+);
+
+
+
+router.get(
+"/conversation/:otherUserId",
+getConversationProxy
+);
+
+
+
+router.patch(
+"/read",
+markReadProxy
+);
+
+
+
+router.get(
+"/unread",
+unreadCountProxy
+);
+
+
+
+export default router;
+------------------------------------- realtime.routes.js --------------------------
+import express from "express";
+
+
+import {
+ realtimeHealthProxy,
+} from "../proxy/realtime.proxy.js";
+
+
+import authMiddleware from "../middleware/authMiddleware.js";
+
+
+const router =
+express.Router();
+
+
+
+router.get(
+"/health",
+authMiddleware,
+realtimeHealthProxy
+);
+
+
+
+export default router;
+---------------------------------------routes/user.routes.js --------------------
+
+import express from "express";
+
+import {
+  getUsersProxy,
+  getMyProfileProxy,
+  getUserProfileProxy,
+  updateProfileProxy,
+} from "../proxy/user.proxy.js";
+
+import authMiddleware from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+
+// All routes require authentication
+
+router.use(
+  authMiddleware
+);
+
+
+// Current logged-in user
+
+router.get(
+  "/me",
+  getMyProfileProxy
+);
+
+
+// All users
+
+router.get(
+  "/",
+  getUsersProxy
+);
+
+
+// Single user profile
+
+router.get(
+  "/:userId",
+  getUserProfileProxy
+);
+
+
+// Update profile
+
+router.patch(
+  "/profile",
+  updateProfileProxy
+);
+
+
+export default router;
+
+-------------------------- proxy/auth.proxy.js --------------------
+import axios from "axios";
+
+import {
+  proxyError,
+} from "../middleware/proxyError.js";
+
+import SERVICES from "../config/services.js";
+
+
+const AUTH_SERVICE_URL =
+  SERVICES.AUTH;
+
+
+
+export const registerProxy = async (
+  req,
+  res
+) => {
+
+  try {
+console.log("in proxy ");
+
+    const response =
+      await axios.post(
+
+        `${AUTH_SERVICE_URL}/api/auth/register`,
+
+        req.body,
+
+        {
+          timeout:5000,
+        }
+
+      );
+
+console.log("in proxy response");
+
+    res
+      .status(response.status)
+      .json(
+        response.data
+      );
+
+
+  }
+  catch(err){
+
+    proxyError(
+      err,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+
+export const loginProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+
+    const response =
+      await axios.post(
+
+        `${AUTH_SERVICE_URL}/api/auth/login`,
+
+        req.body,
+
+        {
+          timeout:5000,
+        }
+
+      );
+
+
+
+    res
+      .status(response.status)
+      .json(
+        response.data
+      );
+
+
+  }
+  catch(err){
+
+
+    proxyError(
+      err,
+      res
+    );
+
+
+  }
+
+};
+
+
+
+
+
+export const logoutProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+
+    const response =
+      await axios.post(
+
+
+        `${AUTH_SERVICE_URL}/api/auth/logout`,
+
+
+        {},
+
+
+        {
+          timeout:5000,
+
+          headers:{
+
+            Authorization:
+              req.headers.authorization,
+
+          },
+
+        }
+
+      );
+
+
+
+    res
+      .status(response.status)
+      .json(
+        response.data
+      );
+
+
+  }
+  catch(err){
+
+
+    proxyError(
+      err,
+      res
+    );
+
+
+  }
+
+};
+-------------------------- proxy/chat.proxy.js --------------------
+import axios from "axios";
+
+import {
+  proxyError,
+} from "../middleware/proxyError.js";
+
+import 
+  SERVICES
+ from "../config/services.js";
+
+
+const CHAT_SERVICE_URL =
+  SERVICES.CHAT;
+
+
+
+export const sendMessageProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.post(
+
+        `${CHAT_SERVICE_URL}/api/chat/send`,
+
+        req.body,
+
+        {
+          headers: {
+            Authorization:
+              req.headers.authorization,
+          },
+        }
+
+      );
+
+
+    res.json(
+      response.data
+    );
+
+  }
+  catch(error){
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+export const getConversationProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.get(
+
+        `${CHAT_SERVICE_URL}/api/chat/conversation/${req.params.otherUserId}`,
+
+        {
+          headers: {
+            Authorization:
+              req.headers.authorization,
+          },
+        }
+
+      );
+
+
+    res.json(
+      response.data
+    );
+
+
+  }
+  catch(error){
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+export const markReadProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.patch(
+
+        `${CHAT_SERVICE_URL}/api/chat/read`,
+
+        req.body,
+
+        {
+          headers: {
+            Authorization:
+              req.headers.authorization,
+          },
+        }
+
+      );
+
+
+    res.json(
+      response.data
+    );
+
+
+  }
+  catch(error){
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+export const unreadCountProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.get(
+
+        `${CHAT_SERVICE_URL}/api/chat/unread`,
+
+        {
+          headers: {
+            Authorization:
+              req.headers.authorization,
+          },
+        }
+
+      );
+
+
+    res.json(
+      response.data
+    );
+
+
+  }
+  catch(error){
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+-------------------------- proxy/realtime.proxy.js --------------------
+import axios from "axios";
+
+import {
+  proxyError,
+} from "../middleware/proxyError.js";
+
+
+import 
+  SERVICES
+ from "../config/services.js";
+
+
+const REALTIME_SERVICE_URL =
+  SERVICES.REALTIME;
+
+
+export const realtimeHealthProxy = async (
+ req,
+ res
+) => {
+
+try{
+
+
+const response =
+await axios.get(
+
+ `${REALTIME_SERVICE_URL}/health`,
+
+ {
+  headers:{
+    Authorization:
+      req.headers.authorization
+  }
+ }
+
+);
+
+
+
+res.json(
+ response.data
+);
+
+
+}
+catch(err){
+
+proxyError(
+ err,
+ res
+);
+
+}
+
+};
+-------------------------- proxy/user.proxy.js --------------------
+
+
+
+import axios from "axios";
+
+import SERVICES from "../config/services.js";
+
+import {
+  proxyError,
+} from "../middleware/proxyError.js";
+
+const USER_SERVICE_URL =
+  SERVICES.USER;
+
+
+
+export const getUsersProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.get(
+
+        `${USER_SERVICE_URL}/api/users`,
+
+        {
+
+          headers: {
+
+            Authorization:
+              req.headers.authorization,
+
+            "x-auth-user-id":
+              req.user.userId,
+
+          },
+
+          timeout: 5000,
+
+        }
+
+      );
+
+    res
+      .status(response.status)
+      .json(response.data);
+
+  }
+  catch (error) {
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+
+export const getMyProfileProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.get(
+
+        `${USER_SERVICE_URL}/api/users/me`,
+
+        {
+
+          headers: {
+
+            Authorization:
+              req.headers.authorization,
+
+            "x-auth-user-id":
+              req.user.userId,
+
+          },
+
+          timeout: 5000,
+
+        }
+
+      );
+
+    res
+      .status(response.status)
+      .json(response.data);
+
+  }
+  catch (error) {
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+
+export const getUserProfileProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.get(
+
+        `${USER_SERVICE_URL}/api/users/${req.params.userId}`,
+
+        {
+
+          headers: {
+
+            Authorization:
+              req.headers.authorization,
+
+            "x-auth-user-id":
+              req.user.userId,
+
+          },
+
+          timeout: 5000,
+
+        }
+
+      );
+
+    res
+      .status(response.status)
+      .json(response.data);
+
+  }
+  catch (error) {
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+
+
+
+
+
+export const updateProfileProxy = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const response =
+      await axios.patch(
+
+        `${USER_SERVICE_URL}/api/users/profile`,
+
+        req.body,
+
+        {
+
+          headers: {
+
+            Authorization:
+              req.headers.authorization,
+
+            "x-auth-user-id":
+              req.user.userId,
+
+          },
+
+          timeout: 5000,
+
+        }
+
+      );
+
+    res
+      .status(response.status)
+      .json(response.data);
+
+  }
+  catch (error) {
+
+    proxyError(
+      error,
+      res
+    );
+
+  }
+
+};
+------------------------------ middleware/ authMiddleware.js --------------------------
+import jwt from "jsonwebtoken";
+
+import AppError from "../utils/AppError.js";
+
+import {
+  redisClient,
+} from "../config/redis.js";
+
+
+
+const authMiddleware =
+async (
+ req,
+ res,
+ next
+)=>{
+
+
+try{
+
+
+const authHeader =
+req.headers.authorization;
+
+
+
+if(
+ !authHeader ||
+ !authHeader.startsWith("Bearer ")
+){
+
+ return next(
+  new AppError(
+   "Authentication required",
+   401
+  )
+ );
+
+}
+
+
+
+const token =
+authHeader.split(" ")[1];
+
+
+
+const decoded =
+jwt.verify(
+ token,
+ process.env.JWT_SECRET
+);
+
+
+
+const {
+ userId,
+ sessionId,
+} = decoded;
+
+
+
+if(
+ !userId ||
+ !sessionId
+){
+
+ return next(
+  new AppError(
+   "Invalid token",
+   401
+  )
+ );
+
+}
+
+
+
+
+const session =
+await redisClient.get(
+ `session:${sessionId}`
+);
+
+
+
+if(!session){
+
+ return next(
+  new AppError(
+   "Session expired",
+   401
+  )
+ );
+
+}
+
+
+
+
+const sessionData =
+JSON.parse(session);
+
+
+
+if(
+ sessionData.userId !== userId
+){
+
+ return next(
+  new AppError(
+   "Invalid session",
+   401
+  )
+ );
+
+}
+
+
+
+
+const activeSession =
+await redisClient.get(
+ `user_active_session:${userId}`
+);
+
+
+
+if(
+ activeSession !== sessionId
+){
+
+ return next(
+  new AppError(
+   "Session expired on another device",
+   401
+  )
+ );
+
+}
+
+
+
+
+req.user={
+
+ userId,
+
+ sessionId,
+
+};
+
+
+
+next();
+
+
+
+}
+catch(error){
+
+
+if(
+ error.name === "JsonWebTokenError" ||
+ error.name === "TokenExpiredError"
+){
+
+ return next(
+  new AppError(
+   "Invalid or expired token",
+   401
+  )
+ );
+
+}
+
+
+next(error);
+
+
+}
+
+
+};
+
+
+
+export default authMiddleware;
+------------------------------------ middleware/errorHandler.js ------------------------
+const errorHandler =
+(
+ err,
+ req,
+ res,
+ next
+)=>{
+
+
+console.error(
+ "❌ Gateway Error:",
+ err.message
+);
+
+
+
+const statusCode =
+err.statusCode || 500;
+
+
+
+res
+.status(statusCode)
+.json({
+
+ success:false,
+
+ message:
+ err.message ||
+ "Internal Server Error"
+
+});
+
+
+};
+
+
+export default errorHandler;
+
+------------------------------ middleware/proxyError.js -------------------------
+export const proxyError = (
+  err,
+  res
+) => {
+
+  const statusCode =
+    err.response?.status || 503;
+
+
+  const errorResponse =
+    err.response?.data || {
+      success: false,
+      message:
+        "Service temporarily unavailable",
+    };
+
+
+  res
+    .status(statusCode)
+    .json(errorResponse);
+
+};
+
+----------------------------------- config/services.js -------------------
+const SERVICES = {
+
+  AUTH:
+    "http://localhost:5001",
+
+  USER:
+    process.env.USER_SERVICE_URL,
+
+  CHAT:
+    process.env.CHAT_SERVICE_URL,
+
+  REALTIME:
+    process.env.REALTIME_SERVICE_URL,
+
+};
+
+
+export default SERVICES;
+
+----------------------------------- config/redis.js -------------------
+import { createClient } from "redis";
+
+
+export const redisClient =
+createClient({
+
+  url:
+    process.env.REDIS_URL,
+
+});
+
+
+
+redisClient.on(
+  "ready",
+  ()=>{
+
+    console.log(
+      "🟢 Gateway Redis Ready"
+    );
+
+  }
+);
+
+
+
+redisClient.on(
+  "error",
+  (error)=>{
+
+    console.log(
+      "❌ Gateway Redis Error:",
+      error.message
+    );
+
+  }
+);
+
+
+
+export const connectRedis =
+async()=>{
+
+  if(redisClient.isOpen){
+
+    return;
+
+  }
+
+
+  await redisClient.connect();
+
+
+};
+--------------------------------- .env ..................................
+PORT=5000
+
+AUTH_SERVICE_URL=http://localhost:5001
+
+USER_SERVICE_URL=http://localhost:5002
+
+CHAT_SERVICE_URL=http://localhost:5003
+
+REALTIME_SERVICE_URL=http://localhost:5004
