@@ -1,7 +1,7 @@
 const SERVICES = {
 
   AUTH:
-    "http://localhost:5001",
+    process.env.AUTH_SERVICE_URL,
 
   USER:
     process.env.USER_SERVICE_URL,
