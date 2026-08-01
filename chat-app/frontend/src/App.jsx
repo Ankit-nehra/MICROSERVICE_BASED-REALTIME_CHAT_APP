@@ -15,6 +15,15 @@ import HomePage from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
 import Welcome from "./pages/Welcome";
 import useAuthStore from "./store/auth.store";
+import AudioCallPage from "./pages/AudioCallPage";
+import VideoCallPage from "./pages/VideoCallPage";
+import {
+CallProvider
+}
+from "./context/CallContext";
+import IncomingCallModal 
+from "./components/IncomingCallModal";
+
 
 function App() {
 const isAuthenticated = useAuthStore(
@@ -38,6 +47,17 @@ if(isAuthenticated){
  if(!socket.connected){
   socket.connect();
  }
+ socket.emit(
+"join",
+{
+ name:
+ useAuthStore.getState().user?.name ||
+ useAuthStore.getState().user?.email,
+
+ avatar:
+ useAuthStore.getState().user?.avatar || ""
+}
+);
 
 }
 
@@ -58,7 +78,8 @@ useEffect(() => {
   };
 }, []);
   return (
-    <>
+    <CallProvider>
+      <IncomingCallModal/>
       <Toaster position="top-right" />
 
       <Routes>
@@ -101,6 +122,16 @@ useEffect(() => {
             isAuthenticated ? <ChatPage /> : <Navigate to="/login" />
           }
         />
+        <Route
+path="/audio-call"
+element={<AudioCallPage/>}
+/>
+
+
+<Route
+path="/video-call"
+element={<VideoCallPage/>}
+/>
 
         {/* ✅ FALLBACK ROUTE */}
         <Route
@@ -108,7 +139,7 @@ useEffect(() => {
           element={<Navigate to="/" />}
         />
       </Routes>
-    </>
+    </CallProvider>
   );
 }
 
