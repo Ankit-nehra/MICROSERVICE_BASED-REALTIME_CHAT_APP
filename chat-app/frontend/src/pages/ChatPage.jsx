@@ -4,7 +4,10 @@ import {
   useState,
   useRef
 } from "react";
-
+import {
+Video,
+Phone
+} from "lucide-react";
 
 import {
   useParams,
@@ -35,9 +38,9 @@ import useChatStore from "../store/chat.store";
 
 
 import ProfileDialog from "../components/ProfileDialog";
-
-
-
+import {
+callUser
+} from "../socket/call.socket";
 
 
 export default function ChatPage(){
@@ -1122,12 +1125,110 @@ isOnline
 
 
 <div
+className="
+flex
+items-center
+gap-2
+"
+>
+
+
+<button
+
+onClick={()=>{
+
+callUser({
+
+receiverId:
+receiver.chatUserId,
+
+callType:
+"audio",
+
+callerName:
+name,
+
+callerEmail:
+user?.email,
+
+callerAvatar:
+avatar
+
+});
+
+}}
 
 className="
 w-10
+h-10
+rounded-full
+bg-green-500/20
+hover:bg-green-500/40
+flex
+items-center
+justify-center
+transition
 "
 
 >
+
+<Phone
+size={20}
+className="text-green-400"
+/>
+
+</button>
+
+
+
+
+
+
+<button
+
+onClick={()=>{
+
+callUser({
+
+receiverId:
+receiver.chatUserId,
+
+callType:
+"video",
+
+callerName:
+name,
+
+callerEmail:
+user?.email,
+
+callerAvatar:
+avatar
+
+});
+
+}}
+
+className="
+w-10
+h-10
+rounded-full
+bg-blue-500/20
+hover:bg-blue-500/40
+flex
+items-center
+justify-center
+transition
+"
+
+>
+
+<Video
+size={20}
+className="text-blue-400"
+/>
+
+</button>
 
 
 </div>
