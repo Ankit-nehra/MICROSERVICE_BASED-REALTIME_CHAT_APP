@@ -38,7 +38,7 @@ A production-oriented real-time communication platform built with a scalable mic
 * [Features](#-features)
 * [System Architecture](#-system-architecture)
 * [Microservices Architecture](#-microservices-architecture)
-* [Real-Time Communication](#-real-time-communication)
+* [Real-Time Communication](#-real-time-communication-Architecture)
 * [WebRTC Calling Architecture](#-webrtc-calling-architecture)
 * [Redis & Upstash Integration](#-redis--upstash-integration)
 * [Technology Stack](#-technology-stack)
@@ -713,7 +713,7 @@ Responsible for:
 
 ---
 
-# ⚡ Real-Time Communication Architecture
+# ⚡ real-time-communication-Architecture
 
 The application maintains persistent socket connections between clients and the realtime service.
 
