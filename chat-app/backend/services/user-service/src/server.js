@@ -42,7 +42,17 @@ app.use(
   }
 );
 
+app.get(
+  "/health",
+  (req, res) => {
 
+    res.json({
+      service: "user-service",
+      status: "running",
+    });
+
+
+    });
 
 app.use(
   "/api/users",
@@ -68,17 +78,7 @@ async()=>{
 
   await connectDB();
 
-app.get(
-  "/health",
-  (req, res) => {
 
-    res.json({
-      service: "user-service",
-      status: "running",
-    });
-
-
-    });
   app.listen(
     PORT,
     ()=>{
