@@ -29,7 +29,7 @@ app.use(express.json());
 
 app.get("/health", (req, res) => {
   res.json({
-    service: "auth-service",
+    service: "apiGateway-service",
     status: "running",
   });
 });
