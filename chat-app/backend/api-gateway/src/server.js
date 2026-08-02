@@ -27,13 +27,12 @@ app.use(express.json());
 
 // Routes
 
-app.get("/health",(req,res)=>{
-res.json({
-service:"api-gateway",
-status:"running"
+app.get("/health", (req, res) => {
+  res.json({
+    service: "auth-service",
+    status: "running",
+  });
 });
-}
-);
 
 
 app.use(
