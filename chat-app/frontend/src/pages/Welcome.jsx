@@ -1,6 +1,65 @@
 import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { useState } from "react";
 
 export default function Welcome() {
+  const SERVICES = [
+  {
+    name: "API Gateway",
+    url: "https://microservice-based-realtime-chat-app-ruy7.onrender.com/health",
+  },
+  {
+    name: "Auth Service",
+    url: "https://microservice-based-realtime-chat-app-elb2.onrender.com/health",
+  },
+  {
+    name: "User Service",
+    url: "https://microservice-based-realtime-chat-app-fa3q.onrender.com/health",
+  },
+  {
+    name: "Chat Service",
+    url: "https://microservice-based-realtime-chat-app.onrender.com/health",
+  },
+  {
+    name: "Realtime Service",
+    url: "https://microservice-based-realtime-chat-app-fjwa.onrender.com/health",
+  },
+];
+const wakeUpServices = async () => {
+  if (loading) return;
+
+  setLoading(true);
+
+  toast.loading("🚀 Starting all services...", {
+    id: "services",
+  });
+
+  await Promise.all(
+    SERVICES.map(async (service) => {
+      try {
+        const res = await fetch(service.url);
+
+        if (!res.ok) {
+          throw new Error();
+        }
+
+        const data = await res.json();
+
+        toast.success(
+          `✅ ${data.service} is ${data.status}`
+        );
+      } catch (err) {
+        toast.error(`❌ ${service.name} is unavailable`);
+      }
+    })
+  );
+
+  toast.dismiss("services");
+
+  toast.success("🎉 All health checks completed!");
+
+  setLoading(false);
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white px-4">
       
@@ -49,6 +108,13 @@ export default function Welcome() {
           >
             Register
           </Link>
+          <button
+          onClick={wakeUpServices}
+          disabled={loading}
+          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition font-medium shadow-lg shadow-emerald-600/30 disabled:opacity-60"
+          >
+          {loading ? "Starting Services..." : "🚀 Start Services"}
+          </button>
         </div>
 
         {/* Footer */}
