@@ -39,12 +39,15 @@ const startServer = async () => {
     initSocket(server);
 
 
-    app.get("/health", (req,res)=>{
+   app.get(
+  "/health",
+  (req, res) => {
 
-      res.json({
-        status:"Realtime service running",
-        redis:"connected"
-      });
+    res.json({
+      service: "realTime-service",
+      status: "running",
+    });
+
 
     });
 
