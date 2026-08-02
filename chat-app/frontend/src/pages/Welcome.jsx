@@ -25,6 +25,7 @@ export default function Welcome() {
     url: "https://microservice-based-realtime-chat-app-fjwa.onrender.com/health",
   },
 ];
+  const [loading, setLoading] = useState(false);
 const wakeUpServices = async () => {
   if (loading) return;
 
