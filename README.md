@@ -1,262 +1,137 @@
-# 🚀 Real-Time Chat Platform
+# 💬 Scalable Real-Time Chat Application  
+## Microservices-Based Communication Platform Using MERN Stack, Socket.IO, WebRTC, Redis & Upstash
 
-![Project Banner](YOUR_BANNER_IMAGE_LINK_HERE)
-
-<p align="center">
-  <b>A modern, scalable and real-time communication platform designed for seamless messaging, instant collaboration, and smooth user interaction.</b>
-</p>
 
 <p align="center">
-
-![GitHub Stars](https://img.shields.io/github/stars/USERNAME/REPOSITORY?style=for-the-badge)
-![GitHub Forks](https://img.shields.io/github/forks/USERNAME/REPOSITORY?style=for-the-badge)
-![GitHub Issues](https://img.shields.io/github/issues/USERNAME/REPOSITORY?style=for-the-badge)
-![License](https://img.shields.io/github/license/USERNAME/REPOSITORY?style=for-the-badge)
-
+  <img src="./screenshots/banner.png" alt="Real Time Chat Application Banner" width="900"/>
 </p>
 
 
-# 📌 Table of Contents
+<p align="center">
+A production-ready real-time communication platform built with a scalable microservices architecture, enabling instant messaging, online presence, typing indicators, message status tracking, notifications, and real-time audio/video communication.
+</p>
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Technology Stack](#-technology-stack)
+
+<p align="center">
+
+![Frontend](https://img.shields.io/badge/Frontend-React.js-blue)
+![State Management](https://img.shields.io/badge/State-Zustand-orange)
+![Backend](https://img.shields.io/badge/Backend-Node.js-green)
+![API](https://img.shields.io/badge/API-Express.js-black)
+![Database](https://img.shields.io/badge/Database-MongoDB-brightgreen)
+![Realtime](https://img.shields.io/badge/Realtime-Socket.IO-black)
+![Communication](https://img.shields.io/badge/Calling-WebRTC-purple)
+![Cache](https://img.shields.io/badge/Cache-Redis-red)
+![Cloud Redis](https://img.shields.io/badge/Redis-Upstash-yellow)
+![Architecture](https://img.shields.io/badge/Architecture-Microservices-orange)
+![Containerization](https://img.shields.io/badge/Deployment-Docker-blue)
+
+</p>
+
+
+---
+
+# 📑 Table of Contents
+
+
+- [Abstract](#-abstract)
+- [Introduction](#-introduction)
+- [Project Vision](#-project-vision)
+- [Core Features](#-core-features)
 - [System Architecture](#-system-architecture)
-- [Installation & Setup](#-installation--setup)
-- [Environment Variables](#-environment-variables)
-- [Running the Project](#-running-the-project)
+- [Microservices Architecture](#-microservices-architecture)
+- [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
+- [Application Workflow](#-application-workflow)
+- [Real-Time Communication](#-real-time-communication)
+- [Audio & Video Calling](#-audio--video-calling)
+- [Installation](#-installation)
+- [Environment Configuration](#-environment-configuration)
+- [Docker Deployment](#-docker-deployment)
+- [API Documentation](#-api-documentation)
+- [Socket Events](#-socket-events)
+- [Database Design](#-database-design)
+- [Performance & Scalability](#-performance--scalability)
+- [Security Implementation](#-security-implementation)
+- [Screenshots](#-screenshots)
 - [Future Enhancements](#-future-enhancements)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Conclusion](#-conclusion)
 - [Author](#-author)
 
 
-# 🌟 Overview
+---
 
-Real-Time Chat Platform is a full-featured communication application that enables users to exchange messages instantly with a smooth and responsive experience.
 
-The platform focuses on providing:
+# 📖 Abstract
 
-- ⚡ Real-time messaging
-- 🔐 Secure authentication
-- 👥 User-based communication
-- 📱 Responsive user interface
-- 🚀 Fast and reliable message delivery
-- 🌐 Modern web application experience
 
+Modern communication systems require highly scalable, low-latency, and reliable architectures capable of handling thousands of simultaneous users.
 
-This project demonstrates the implementation of real-time communication systems with modern web technologies and scalable application architecture.
+This project presents the design and implementation of a:
 
+> **Scalable Microservices-Based Real-Time Chat Application using MERN Stack, Socket.IO, WebRTC, Redis and Upstash**
 
-# ✨ Features
 
-## 💬 Real-Time Messaging
+The application provides a complete real-time communication ecosystem where users can securely communicate through private messaging, maintain online presence, receive instant notifications, and perform real-time audio/video calls.
 
-- Instant message delivery without page refresh
-- Real-time conversation updates
-- Fast communication between connected users
 
+Unlike traditional monolithic chat applications, this system follows a distributed microservices architecture where different responsibilities are separated into independent backend services.
 
-## 👤 User Authentication
 
-- Secure user registration and login
-- Protected user sessions
-- Personalized user experience
+The platform includes:
 
 
-## 🟢 Online Presence
+- 🔐 Secure authentication system
+- 💬 Private one-to-one messaging
+- 🟢 Real-time online/offline presence
+- ✍️ Typing indicators
+- ✅ Message delivery and read status tracking
+- 🔔 Real-time notifications
+- 🔎 User search functionality
+- 👤 User profile management
+- 📞 Audio calling using WebRTC
+- 🎥 Video calling using WebRTC
+- ⚡ Real-time communication using Socket.IO
+- 🚀 Distributed architecture using Redis and Upstash
 
-- Active user status
-- Real-time availability tracking
-- User activity updates
 
+The project focuses on building a scalable communication platform similar to modern applications such as WhatsApp, Discord, and Slack while maintaining modularity, performance, and future scalability.
 
-## 📱 Responsive Design
 
-- Fully responsive interface
-- Optimized for desktop, tablet and mobile devices
-- Modern user-friendly UI
+---
 
 
-## 🔔 Notifications
+# 🚀 Introduction
 
-- Instant message alerts
-- Improved user engagement
-- Real-time updates
 
+Real-time communication has become a fundamental requirement for modern applications.
 
-## 🔒 Security
 
-- Secure authentication workflow
-- Protected APIs
-- Safe data handling
+Applications such as messaging platforms, collaboration tools, and social networks require:
 
 
-# 📸 Screenshots
+- Instant message delivery
+- Reliable connection management
+- High concurrency support
+- Low communication latency
+- Real-time user interaction
 
-> Add your application screenshots here
 
+Traditional monolithic architectures often become difficult to maintain as application complexity increases.
 
-## 🏠 Home Page
 
-![Home Screenshot](ADD_SCREENSHOT_LINK)
+Common challenges include:
 
 
-## 💬 Chat Interface
+- Tight coupling between modules
+- Difficult independent scaling
+- Deployment complexity
+- Poor fault isolation
+- Performance bottlenecks
 
-![Chat Screenshot](ADD_SCREENSHOT_LINK)
 
+To overcome these limitations, this project implements a **microservices-based architecture** where each major functionality is isolated into independent services.
 
-## 🔐 Authentication
 
-![Login Screenshot](ADD_SCREENSHOT_LINK)
+The system architecture consists of:
 
-
-## 📱 Mobile Responsive View
-
-![Mobile Screenshot](ADD_SCREENSHOT_LINK)
-
-
-
-# 🛠 Technology Stack
-
-## Frontend
-
-- React.js
-- HTML5
-- CSS3
-- JavaScript / TypeScript
-- Modern UI Components
-
-
-## Backend
-
-- Node.js
-- Express.js
-- REST API
-
-
-## Real-Time Communication
-
-- Socket.IO / WebSocket
-
-
-## Database
-
-- MongoDB / PostgreSQL / MySQL
-
-
-## Authentication
-
-- JWT Authentication
-- Secure Password Encryption
-
-
-## Deployment
-
-- Cloud Hosting Platform
-- CI/CD Integration
-
-
-
-# 🏗 System Architecture
-
-             User Browser
-
-                  |
-                  |
-
-          Frontend Application
-
-                  |
-                  |
-
-          Backend API Server
-
-                  |
-      -------------------------
-
-      |                       |
-            |                       |
-Database Server WebSocket Server
-      -------------------------
-
-          Real-Time Messaging
-          
-
-# ⚙️ Installation & Setup
-
-
-## Clone Repository
-
-```bash
-git clone https://github.com/USERNAME/REPOSITORY.git
-▶️ Running The Project
-Development Mode
-npm run dev
-Production Build
-npm run build
-
-npm start
-📂 Project Structure
-project-root
-│
-├── frontend
-│   ├── components
-│   ├── pages
-│   ├── hooks
-│   └── assets
-│
-├── backend
-│   ├── controllers
-│   ├── routes
-│   ├── models
-│   ├── middleware
-│   └── server.js
-│
-├── .env
-├── package.json
-└── README.md
-
-🚀 Future Enhancements
-
-Upcoming improvements:
-
-🎥 Video calling support
-📎 File sharing system
-🖼 Image and media messages
-👥 Group chat functionality
-🔔 Advanced notification system
-🤖 AI-powered chat assistance
-🌍 Multi-language support
-🤝 Contributing
-
-Contributions are always welcome.
-
-Follow these steps:
-
-Fork the repository
-Create a new branch
-git checkout -b feature/NewFeature
-Commit your changes
-git commit -m "Added new feature"
-Push changes
-git push origin feature/NewFeature
-Create a Pull Request
-📄 License
-
-This project is licensed under the MIT License.
-
-👨‍💻 Author
-
-Your Name
-
-GitHub: YOUR_GITHUB_PROFILE
-LinkedIn: YOUR_LINKEDIN_PROFILE
-<p align="center">
-
-⭐ If you like this project, consider giving it a star!
-
-</p> ```
