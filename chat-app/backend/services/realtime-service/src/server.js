@@ -26,20 +26,7 @@ const server = http.createServer(app);
 
 
 console.log("⚙️ [INIT] Starting Realtime Service...");
-
-
-
-const startServer = async () => {
-
-  try {
-
-    await connectRedis();
-
-
-    initSocket(server);
-
-
-   app.get(
+app.get(
   "/health",
   (req, res) => {
 
@@ -50,6 +37,16 @@ const startServer = async () => {
 
 
     });
+
+
+const startServer = async () => {
+
+  try {
+
+    await connectRedis();
+
+
+    initSocket(server);
 
 
     const PORT = process.env.PORT || 5004;
