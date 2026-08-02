@@ -1,480 +1,396 @@
-# 💬 Scalable Real-Time Chat Application  
-## Microservices-Based Communication Platform Using MERN Stack, Socket.IO, WebRTC, Redis & Upstash
+# 💬 Scalable Real-Time Chat Application
 
+## Microservices-Based Communication Platform Using MERN Stack, Socket.IO, WebRTC, Redis & Upstash
 
 <p align="center">
   <img src="./screenshots/banner.png" alt="Real Time Chat Application Banner" width="900"/>
 </p>
 
-
 <p align="center">
-A production-ready real-time communication platform built with a scalable microservices architecture, enabling instant messaging, online presence, typing indicators, message status tracking, notifications, and real-time audio/video communication.
-</p>
 
+A production-oriented real-time communication platform built with a scalable microservices architecture, enabling instant messaging, presence tracking, typing indicators, message delivery status, notifications, and peer-to-peer audio/video communication.
+
+</p>
 
 <p align="center">
 
 ![Frontend](https://img.shields.io/badge/Frontend-React.js-blue)
-![State Management](https://img.shields.io/badge/State-Zustand-orange)
+![State](https://img.shields.io/badge/State-Zustand-orange)
 ![Backend](https://img.shields.io/badge/Backend-Node.js-green)
 ![API](https://img.shields.io/badge/API-Express.js-black)
 ![Database](https://img.shields.io/badge/Database-MongoDB-brightgreen)
 ![Realtime](https://img.shields.io/badge/Realtime-Socket.IO-black)
-![Communication](https://img.shields.io/badge/Calling-WebRTC-purple)
+![Calling](https://img.shields.io/badge/Calling-WebRTC-purple)
 ![Cache](https://img.shields.io/badge/Cache-Redis-red)
 ![Cloud Redis](https://img.shields.io/badge/Redis-Upstash-yellow)
 ![Architecture](https://img.shields.io/badge/Architecture-Microservices-orange)
-![Containerization](https://img.shields.io/badge/Deployment-Docker-blue)
+![Container](https://img.shields.io/badge/Deployment-Docker-blue)
 
 </p>
-
 
 ---
 
 # 📑 Table of Contents
 
-
-- [Abstract](#-abstract)
-- [Introduction](#-introduction)
-- [Project Vision](#-project-vision)
-- [Core Features](#-core-features)
-- [System Architecture](#-system-architecture)
-- [Microservices Architecture](#-microservices-architecture)
-- [Technology Stack](#-technology-stack)
-- [Project Structure](#-project-structure)
-- [Application Workflow](#-application-workflow)
-- [Real-Time Communication](#-real-time-communication)
-- [Audio & Video Calling](#-audio--video-calling)
-- [Installation](#-installation)
-- [Environment Configuration](#-environment-configuration)
-- [Docker Deployment](#-docker-deployment)
-- [API Documentation](#-api-documentation)
-- [Socket Events](#-socket-events)
-- [Database Design](#-database-design)
-- [Performance & Scalability](#-performance--scalability)
-- [Security Implementation](#-security-implementation)
-- [Screenshots](#-screenshots)
-- [Future Enhancements](#-future-enhancements)
-- [Conclusion](#-conclusion)
-- [Author](#-author)
-
+* [Overview](#-overview)
+* [Project Vision](#-project-vision)
+* [Key Highlights](#-key-highlights)
+* [Features](#-features)
+* [System Architecture](#-system-architecture)
+* [Microservices Architecture](#-microservices-architecture)
+* [Real-Time Communication](#-real-time-communication)
+* [WebRTC Calling Architecture](#-webrtc-calling-architecture)
+* [Redis & Upstash Integration](#-redis--upstash-integration)
+* [Technology Stack](#-technology-stack)
 
 ---
 
+# 📖 Overview
 
-# 📖 Abstract
+Modern communication platforms require systems that can handle:
 
+* Thousands of concurrent users
+* Low-latency message delivery
+* Reliable connection management
+* Distributed backend processing
+* Real-time state synchronization
 
-Modern communication systems require highly scalable, low-latency, and reliable architectures capable of handling thousands of simultaneous users.
+This project implements a:
 
-This project presents the design and implementation of a:
+> **Scalable Microservices-Based Real-Time Chat Application built using MERN Stack, Socket.IO, WebRTC, Redis and Upstash.**
 
-> **Scalable Microservices-Based Real-Time Chat Application using MERN Stack, Socket.IO, WebRTC, Redis and Upstash**
+The platform provides a complete communication ecosystem where users can:
 
+* Exchange instant messages
+* Track online/offline presence
+* Receive real-time notifications
+* View typing activity
+* Track message delivery status
+* Search users
+* Manage profiles
+* Perform audio calls
+* Perform video calls
 
-The application provides a complete real-time communication ecosystem where users can securely communicate through private messaging, maintain online presence, receive instant notifications, and perform real-time audio/video calls.
-
-
-Unlike traditional monolithic chat applications, this system follows a distributed microservices architecture where different responsibilities are separated into independent backend services.
-
-
-The platform includes:
-
-
-- 🔐 Secure authentication system
-- 💬 Private one-to-one messaging
-- 🟢 Real-time online/offline presence
-- ✍️ Typing indicators
-- ✅ Message delivery and read status tracking
-- 🔔 Real-time notifications
-- 🔎 User search functionality
-- 👤 User profile management
-- 📞 Audio calling using WebRTC
-- 🎥 Video calling using WebRTC
-- ⚡ Real-time communication using Socket.IO
-- 🚀 Distributed architecture using Redis and Upstash
-
-
-The project focuses on building a scalable communication platform similar to modern applications such as WhatsApp, Discord, and Slack while maintaining modularity, performance, and future scalability.
-
+Unlike traditional monolithic applications, this system follows a distributed architecture where every major responsibility is isolated into independent services.
 
 ---
-
-
-# 🚀 Introduction
-
-
-Real-time communication has become a fundamental requirement for modern applications.
-
-
-Applications such as messaging platforms, collaboration tools, and social networks require:
-
-
-- Instant message delivery
-- Reliable connection management
-- High concurrency support
-- Low communication latency
-- Real-time user interaction
-
-
-Traditional monolithic architectures often become difficult to maintain as application complexity increases.
-
-
-Common challenges include:
-
-
-- Tight coupling between modules
-- Difficult independent scaling
-- Deployment complexity
-- Poor fault isolation
-- Performance bottlenecks
-
-Frontend Application
-|
-|
-API Gateway
-|
-
-| | | |
-Auth User Chat Realtime
-Service Service Service Service
-
-    |
-    |
-
-MongoDB + Redis
-
-
-
-Each service focuses on a specific responsibility, allowing:
-
-
-- Independent development
-- Easier maintenance
-- Better scalability
-- Improved fault tolerance
-- Flexible deployment
-
-
----
-
 
 # 🎯 Project Vision
 
+The goal of this project is to design a production-level communication platform demonstrating modern backend engineering practices:
 
-The main vision of this project is to design and develop a production-level real-time communication platform that demonstrates:
+## 1. Scalable Microservices Architecture
 
-
-## 1. Scalable Backend Architecture
-
-
-Building an application using independent microservices instead of a single backend server.
-
+Instead of a single backend application, the system is divided into independent services.
 
 Benefits:
 
-
-- Service isolation
-- Independent scaling
-- Better maintainability
-- Easier debugging
-
+* Independent development
+* Independent deployment
+* Better fault isolation
+* Easier maintenance
+* Horizontal scalability
 
 ---
-
 
 ## 2. Real-Time Communication Engine
 
+The application implements a low-latency communication layer using:
 
-Implementing a low-latency communication layer using:
-
-
-
+```
 Socket.IO
-+
+     +
 WebSocket Communication
-+
+     +
 Redis Synchronization
+```
 
+This enables:
 
-
-The system enables:
-
-
-- Instant message delivery
-- Presence tracking
-- Typing events
-- Notifications
-- Real-time updates
-
+* Instant message delivery
+* Presence tracking
+* Typing indicators
+* Notifications
+* Live application updates
 
 ---
-
 
 ## 3. Modern Frontend Architecture
 
-
 The frontend follows a scalable React architecture using:
 
+```
+React.js
++
+Zustand
++
+Socket.IO Client
++
+WebRTC
+```
 
-- React.js
-- Zustand state management
-- Socket.IO Client
-- Component-based design
+Providing:
 
-
-The application provides a smooth user experience with:
-
-
-- Instant UI updates
-- Optimistic interactions
-- Real-time state synchronization
-
+* Reactive UI updates
+* Centralized state management
+* Real-time synchronization
+* Optimized user experience
 
 ---
 
+## 4. Peer-to-Peer Communication
 
-## 4. Real-Time Voice & Video Communication
+Audio and video communication is implemented using:
 
-
-The platform supports peer-to-peer communication using:
-
-
-
+```
 WebRTC
 +
 Socket.IO Signaling
+```
 
+Supporting:
 
-
-Users can establish:
-
-
-- Audio calls
-- Video calls
-- Peer connections
-- Media streaming
-
+* Browser-based calling
+* Peer connections
+* Real-time media streaming
 
 ---
 
+# 🚀 Key Highlights
 
-# ✨ Core Features
+## Enterprise-Level Architecture
 
+* Microservices-based backend
+* API Gateway pattern
+* Independent service communication
+* Container-ready deployment
 
-## 🔐 Authentication System
+## Real-Time Features
 
+* Instant messaging
+* Online/offline status
+* Typing indicators
+* Read receipts
+* Live notifications
 
-A secure authentication module providing:
+## Communication Features
 
+* Audio calling
+* Video calling
+* WebRTC peer connection
+* Real-time signaling
 
-### User Registration
+## Performance Features
 
+* Redis-based synchronization
+* Optimized socket handling
+* Distributed communication support
 
-Users can create new accounts with:
+## Security Features
 
-
-- Name
-- Email
-- Password
-- Profile information
-
+* JWT authentication
+* Password hashing
+* Protected APIs
+* Token validation
 
 ---
 
+# ✨ Features
 
-### Secure Login
+# 🔐 Authentication System
 
+A secure authentication module responsible for user identity management.
 
-Authentication flow:
+## Capabilities
 
+* User registration
+* Secure login
+* JWT authentication
+* Password encryption
+* Protected routes
 
+Authentication Flow:
 
+```
 User Credentials
 
-    |
+        |
 
-    ▼
+        ▼
 
 Authentication Service
 
-    |
+        |
 
-    ▼
+        ▼
 
-JWT Token Generation
+Password Verification
 
-    |
+        |
 
-    ▼
+        ▼
+
+JWT Generation
+
+        |
+
+        ▼
 
 Authenticated Session
+```
 
+Security Implementation:
 
-
-Security implementation:
-
-
-- JWT authentication
-- Password hashing
-- Protected routes
-- Token validation
-
+| Feature            | Technology         |
+| ------------------ | ------------------ |
+| Authentication     | JWT                |
+| Password Security  | bcrypt             |
+| Authorization      | Middleware         |
+| Session Validation | Token Verification |
 
 ---
 
+# 💬 Real-Time Private Messaging
 
-# 💬 Private Real-Time Messaging
+The core communication engine enables users to exchange messages instantly.
 
+Features:
 
-The core functionality of the application.
+* One-to-one messaging
+* Conversation history
+* Instant delivery
+* Message persistence
+* Message lifecycle tracking
 
+Message Flow:
 
-Users can:
-
-
-- Send private messages
-- Receive messages instantly
-- View previous conversations
-- Continue previous chats
-
-
-Communication:
-
-
-
+```
 Sender
 
-|
+   |
 
-|
+   |
 
-Socket.IO Event
+Socket Event
 
-|
+   |
 
-|
+   |
 
 Realtime Service
 
-|
+   |
 
-|
+   |
 
 Receiver
+```
 
+Message Lifecycle:
 
+```
+Created
+
+ ↓
+
+Stored
+
+ ↓
+
+Delivered
+
+ ↓
+
+Read
+```
 
 ---
 
-
 # 🟢 Online Presence System
-
 
 The application tracks user availability in real-time.
 
-
 Supported states:
 
-
-
+```
 🟢 Online
 
 ⚫ Offline
 
 ⌨️ Typing
+```
 
+The realtime layer manages:
 
-
-The realtime service manages:
-
-
-- Active socket connections
-- User status
-- Connection lifecycle
-
+* Active socket connections
+* User connection mapping
+* Presence updates
+* Connection lifecycle
 
 ---
-
 
 # ✍️ Typing Indicator
 
-
-Users receive real-time typing feedback.
-
+Users receive instant typing feedback.
 
 Example:
 
-
-
+```
 User A is typing...
-
-
+```
 
 Implementation:
 
-
-
+```
 Typing Event
 
-  |
+      |
 
-  ▼
+      ▼
 
 Socket.IO
 
-  |
+      |
 
-  ▼
+      ▼
 
 Receiver UI Update
-
-
+```
 
 ---
-
 
 # ✅ Message Status Tracking
 
+The system supports modern messaging indicators:
 
-The system supports message state management:
-
-
-
+```
 Sent
 
-|
+ ↓
 
 Delivered
 
-|
+ ↓
 
 Read
+```
 
-
-
-This improves user experience similar to modern messaging platforms.
-
+This provides WhatsApp-style message tracking.
 
 ---
 
+# 🔔 Real-Time Notifications
 
-# 🔔 Notification System
+The notification system provides instant updates for:
 
+* New messages
+* Incoming calls
+* User activity
 
-Real-time notification support for:
+Flow:
 
-
-- New messages
-- Incoming calls
-- User activities
-
-
-Example:
-
-
-
-New Message Received
+```
+Event Trigger
 
       |
 
@@ -492,2494 +408,473 @@ Notification Event
 
       ▼
 
-User Interface Update
-
-
+Frontend Update
+```
 
 ---
 
+# 🔎 User Discovery System
 
-# 🔎 User Search System
-
-
-Users can discover other users using search functionality.
-
+Users can discover other users through search.
 
 Features:
 
+* Username search
+* Profile-based search
+* Dynamic results
 
-- Search by username
-- Search by profile information
-- Instant result updates
+Flow:
 
+```
+Search Query
+
+      |
+
+      ▼
+
+User Service
+
+      |
+
+      ▼
+
+Matching Users
+```
 
 ---
 
+# 👤 Profile Management
 
-# 👤 User Profile Management
-
-
-Each user has a customizable profile system.
-
+Users can manage their profile information.
 
 Features:
 
-
-- View profile details
-- Update personal information
-- Profile dialog interface
-- User information display
-
+* View profile
+* Update details
+* Profile image support
+* Personal information management
 
 ---
-
 
 # 📞 Audio Calling
 
-
-The application supports real-time audio communication.
-
+The platform supports browser-based real-time audio communication.
 
 Technology:
 
-
-
+```
 WebRTC
 +
 Socket.IO Signaling
-
-
+```
 
 Features:
 
-
-- Peer-to-peer audio streaming
-- Call initiation
-- Call acceptance
-- Call termination
-
+* Call initiation
+* Call acceptance
+* Peer connection
+* Audio streaming
 
 ---
 
-
 # 🎥 Video Calling
-
 
 Video communication is implemented using WebRTC.
 
-
 Features:
 
-
-- Camera streaming
-- Real-time video transmission
-- Peer connection management
-- Call controls
-
+* Camera streaming
+* Microphone access
+* Peer-to-peer media transfer
+* Call controls
 
 Architecture:
 
-
-
+```
 User A
 
-|
+   |
 
-|
+   |
 
 WebRTC Peer Connection
 
-|
+   |
 
-|
+   |
 
 User B
-
-
-To overcome these limitations, this project implements a **microservices-based architecture** where each major functionality is isolated into independent services.
-
-
-The system architecture consists of:
-
+```
 
 ---
 
 # 🏗 System Architecture
 
-
-The application follows a **distributed microservices architecture** where frontend communication is managed through an API Gateway and backend responsibilities are divided into independent services.
-
+The application follows a distributed microservices architecture.
 
 <p align="center">
-  <img src="./screenshots/system-architecture.png" width="950" alt="System Architecture"/>
+<img src="./screenshots/system-architecture.png" width="950"/>
 </p>
-
 
 ## High-Level Architecture
 
-                     USER
+```mermaid
+flowchart TD
+
+USER[User]
+
+FRONTEND[React Frontend<br/>Zustand + Socket.IO Client]
+
+GATEWAY[API Gateway]
+
+AUTH[Auth Service]
+
+USER_SERVICE[User Service]
+
+CHAT[Chat Service]
+
+REALTIME[Realtime Service]
+
+DB[(MongoDB)]
+
+REDIS[(Redis / Upstash)]
 
 
-                      |
+USER --> FRONTEND
 
-                      |
+FRONTEND --> GATEWAY
 
-             React Frontend
+GATEWAY --> AUTH
 
-      (React + Zustand + Socket.IO Client)
+GATEWAY --> USER_SERVICE
 
-                      |
+GATEWAY --> CHAT
 
-                      |
+FRONTEND --> REALTIME
 
-                API Gateway
+AUTH --> DB
 
-                   :5000
+USER_SERVICE --> DB
 
-                      |
+CHAT --> DB
 
-    -----------------------------------
-
-    |              |          |        |
-
-    ▼              ▼          ▼        ▼
-
-
-  Auth          User       Chat    Realtime
-
-Service       Service    Service   Service
-
-
- :5001         :5002      :5003     :5004
-
-
-    |              |          |        |
-
-    -----------------------------------
-
-                      |
-
-                      ▼
-
-
-             MongoDB Database
-
-
-                      +
-
-                      |
-
-
-                Redis / Upstash
-
+REALTIME --> REDIS
+```
 
 ---
-
-
-# 🔥 Architecture Overview
-
-
-The complete system is divided into two major layers:
-
-
-## Frontend Layer
-
-
-Responsible for:
-
-
-- User interface rendering
-- Application state management
-- API communication
-- Real-time event handling
-- WebRTC call interface
-
-
-Technology stack:
-
-
-
-React.js
-
-Zustand
-
-Socket.IO Client
-
-WebRTC
-
-Axios
-
-Tailwind CSS
-
-
-
----
-
-
-## Backend Layer
-
-
-The backend follows a microservices architecture.
-
-
-Each service handles a dedicated business responsibility.
-
-
-Backend components:
-
-
-
-backend
-
-│
-
-├── api-gateway
-
-│
-
-├── services
-
-│ │
-
-│ ├── auth-service
-
-│ │
-
-│ ├── user-service
-
-│ │
-
-│ ├── chat-service
-
-│ │
-
-│ └── realtime-service
-
-│
-
-└── docker-compose.yml
-
-
-
----
-
 
 # 🧩 Microservices Architecture
 
+The backend is divided into five independent services:
 
-The system contains four independent backend services:
+```
+Backend
 
+│
 
-API Gateway Service
-Authentication Service
-User Service
-Chat Service
-Real-Time Communication Service
+├── API Gateway
 
+│
 
-Each service can be independently:
+├── Authentication Service
 
+│
 
-- Developed
-- Tested
-- Deployed
-- Scaled
+├── User Service
 
+│
 
----
+├── Chat Service
 
+│
 
-# 🚪 API Gateway Service
+└── Realtime Service
+```
 
-
-## Overview
-
-
-The API Gateway acts as the single entry point between frontend and backend services.
-
-
-Instead of allowing frontend to directly communicate with multiple services, all requests are routed through the gateway.
-
-
-Architecture:
-
-
-
-Frontend
-
-|
-
-|
-
-API Gateway
-
-|
-
-| | |
-
-Auth User Chat
-
-Service Service Service
-
-
-
----
-
-
-## Responsibilities
-
-
-The API Gateway manages:
-
-
-- Client request routing
-- Service communication
-- API abstraction
-- Centralized backend access
-
+Each service has a dedicated responsibility.
 
 Advantages:
 
-
-- Improved security
-- Reduced frontend complexity
-- Better service isolation
-- Easier scaling
-
-
-Technologies:
-
-
-
-Node.js
-
-Express.js
-
-Axios
-
-
+* Better scalability
+* Service isolation
+* Easier debugging
+* Independent deployment
+* Improved maintainability
 
 ---
 
+# 🚪 API Gateway Service
+
+## Purpose
+
+The API Gateway acts as the single entry point between frontend and backend services.
+
+Instead of directly connecting with every backend service, the frontend communicates through the gateway.
+
+Architecture:
+
+```
+Frontend
+
+    |
+
+    |
+
+API Gateway
+
+    |
+
+-----------------------
+
+|        |       |
+
+Auth    User    Chat
+
+Service Service Service
+```
+
+Responsibilities:
+
+* Request routing
+* Service communication
+* API abstraction
+* Centralized access layer
+
+Technology:
+
+```
+Node.js
+Express.js
+Axios
+```
+
+---
 
 # 🔐 Authentication Service
 
+Responsible for identity and security management.
 
-## Overview
+Responsibilities:
 
+* User registration
+* Login processing
+* JWT generation
+* Password encryption
+* Authentication validation
 
-The Authentication Service manages user identity, security, and authorization.
+Technology:
 
-
-Location:
-
-
-
-backend/services/auth-service
-
-
-
----
-
-
-## Responsibilities
-
-
-The service handles:
-
-
-### User Registration
-
-
-Flow:
-
-
-
-User Data
-
-|
-
-▼
-
-Auth Service
-
-|
-
-▼
-
-Password Encryption
-
-|
-
-▼
-
-MongoDB Storage
-
-
+```
+JWT
+bcrypt
+MongoDB
+```
 
 ---
-
-
-### User Login
-
-
-Flow:
-
-
-
-Email + Password
-
-    |
-
-    ▼
-
-Authentication Validation
-
-    |
-
-    ▼
-
-JWT Token Generation
-
-    |
-
-    ▼
-
-Authenticated User
-
-
-
----
-
-
-## Security Implementation
-
-
-Implemented security mechanisms:
-
-
-| Feature | Technology |
-|---|---|
-| Authentication | JWT |
-| Password Security | bcrypt |
-| Session Validation | Middleware |
-| Protected Routes | Token Verification |
-
-
----
-
 
 # 👤 User Service
 
+Responsible for user-related operations.
 
-## Overview
+Handles:
 
-
-The User Service manages user-related operations and profile management.
-
-
-Location:
-
-
-
-backend/services/user-service
-
-
+* User profiles
+* Profile updates
+* User search
+* User discovery
 
 ---
-
-
-## Responsibilities
-
-
-The service handles:
-
-
-- User information
-- Profile management
-- User search
-- User discovery
-- Profile updates
-
-
----
-
-
-## Supported Features
-
-
-### Profile Management
-
-
-Users can:
-
-
-- View profile
-- Update profile information
-- Display profile dialog
-- Manage user details
-
-
----
-
-
-### User Search
-
-
-Search functionality allows:
-
-Search Query
-
-  |
-
-  ▼
-
-User Service
-
-  |
-
-  ▼
-
-Matching Users
-
-
-
----
-
 
 # 💬 Chat Service
 
+Responsible for message management.
 
-## Overview
+Handles:
 
-
-The Chat Service manages all message-related operations.
-
-
-Location:
-
-
-
-backend/services/chat-service
-
-
+* Message storage
+* Conversation management
+* Message retrieval
+* Chat history
 
 ---
-
-
-## Responsibilities
-
-
-The service handles:
-
-
-- Message storage
-- Conversation history
-- Private chat management
-- Message retrieval
-
-
----
-
-
-## Message Flow
-
-
-
-Sender
-
-|
-
-|
-
-sendMessage Event
-
-|
-
-|
-
-Realtime Service
-
-|
-
-|
-
-Chat Service
-
-|
-
-|
-
-MongoDB
-
-|
-
-|
-
-Receiver
-
-
-
----
-
-
-## Message Lifecycle
-
-
-
-Message Created
-
-    |
-
-    ▼
-
-Stored in Database
-
-    |
-
-    ▼
-
-Realtime Delivery
-
-    |
-
-    ▼
-
-Read Status Updated
-
-
-
----
-
 
 # ⚡ Real-Time Service
 
+The core communication engine.
 
-## Overview
+Responsible for:
 
-
-The Real-Time Service is responsible for all live communication features.
-
-
-Location:
-
-
-
-backend/services/realtime-service
-
-
+* Socket.IO connections
+* Online presence
+* Typing events
+* Message delivery
+* Notifications
+* WebRTC signaling
 
 ---
 
+# ⚡ Real-Time Communication Architecture
 
-## Responsibilities
+The application maintains persistent socket connections between clients and the realtime service.
 
+Architecture:
 
-The service manages:
+```mermaid
+sequenceDiagram
 
-
-- Socket.IO connections
-- Online user tracking
-- Typing indicators
-- Message delivery
-- Notifications
-- Call signaling
-
-
----
+participant A as User A
+participant R as Realtime Service
+participant B as User B
 
 
-# 🔌 Socket.IO Communication Architecture
+A->>R: sendMessage()
+R->>B: receiveMessage()
 
-
-<p align="center">
-  <img src="./screenshots/socket-flow.png" width="850"/>
-</p>
-
-
-Real-time communication flow:
-
-
+B->>R: messageRead()
+R->>A: updateStatus()
+```
 
 ---
-
-
-# 📡 Real-Time Events
-
-
-The application uses Socket.IO events for instant communication.
-
-
-## User Connection
-
-
-Event:
-
-join
-
-
-
-Purpose:
-
-
-- Register active user
-- Maintain socket mapping
-- Update online status
-
-
----
-
-
-## Send Message
-
-
-Event:
-
-
-
-sendMessage
-
-
-
-Flow:
-
-
-
-Sender
-
-|
-
-|
-
-sendMessage
-
-|
-
-|
-
-Realtime Service
-
-|
-
-|
-
-Receiver
-
-
-
----
-
-
-## Receive Message
-
-
-Event:
-
-
-
-receiveMessage
-
-
-
-Purpose:
-
-
-- Deliver message instantly
-- Update chat interface
-
-
----
-
-
-## Typing Indicator
-
-
-Events:
-
-
-
-typing
-
-stopTyping
-
-
-
-Purpose:
-
-
-- Show real-time typing status
-
-
----
-
-
-## Message Status Events
-
-
-Events:
-
-
-
-messageDelivered
-
-messageRead
-
-
-
-Purpose:
-
-
-- Track message lifecycle
-
-
----
-
 
 # 📞 WebRTC Calling Architecture
 
+WebRTC handles direct peer-to-peer media communication.
 
-The application implements peer-to-peer audio and video communication using WebRTC.
-
-
-Socket.IO is used only for signaling.
-
+Socket.IO is only responsible for signaling.
 
 Architecture:
 
+```mermaid
+sequenceDiagram
 
-          User A
-
-
-            |
-
-            |
-
-    Socket.IO Signaling
+participant A as Caller
+participant S as Socket.IO
+participant B as Receiver
 
 
-            |
+A->>S: Call Request
 
-            |
+S->>B: Incoming Call
 
-      WebRTC Handshake
+B->>S: Answer
 
+S->>A: SDP Exchange
 
-            |
+A->>B: WebRTC Connection
 
-            |
-
-    Peer To Peer Connection
-
-
-            |
-
-            |
-
-          User B
-
+A->>B: Audio/Video Stream
+```
 
 ---
-
-
-# WebRTC Call Flow
-
-
-## 1. Call Initiation
-
-
-
-User A clicks Call
-
-    |
-
-    ▼
-
-Create WebRTC Offer
-
-    |
-
-    ▼
-
-Send Signal Through Socket.IO
-
-
-
----
-
-
-## 2. Call Acceptance
-
-
-
-User B receives request
-
-    |
-
-    ▼
-
-Creates Answer
-
-    |
-
-    ▼
-
-Returns WebRTC Response
-
-
-
----
-
-
-## 3. Media Connection
-
-
-After successful handshake:
-
-
-
-Camera Stream
-
-    +
-
-Microphone Stream
-
-    |
-
-    ▼
-
-Peer Connection
-
-    |
-
-    ▼
-
-Real-Time Communication
-
-
-
----
-
 
 # 🔴 Redis & Upstash Integration
 
-
 Redis provides high-speed in-memory data operations.
 
+The project uses Redis for:
 
-The project uses Redis/Upstash for:
-
-
-- Real-time state management
-- Socket synchronization
-- Fast data access
-- Distributed communication support
-
+* Real-time state synchronization
+* Socket scaling
+* Distributed communication
+* Fast data access
 
 Architecture:
 
+```mermaid
+flowchart LR
 
-          Clients
+SERVER1[Realtime Server 1]
 
+SERVER2[Realtime Server 2]
 
-             |
+SERVER3[Realtime Server 3]
 
-             |
-
-      Multiple Servers
-
-
-             |
-
-             |
-
-          Redis
+REDIS[(Redis / Upstash)]
 
 
-             |
+SERVER1 --> REDIS
 
-             |
+SERVER2 --> REDIS
 
-   Shared Real-Time State
+SERVER3 --> REDIS
+```
 
+Benefits:
 
----
+## Scalability
 
+Multiple realtime instances can share common state.
 
-## Benefits of Redis Integration
+## Performance
 
+Provides:
 
-### Scalability
+* Low latency
+* Fast reads
+* Efficient event synchronization
 
+## Distributed Communication
 
-Multiple realtime servers can share:
-
-
-- User presence
-- Socket information
-- Events
-
-
----
-
-
-### Performance
-
-
-Redis provides:
-
-
-- Low latency operations
-- Fast data retrieval
-- Efficient caching
-
-
----
-
-
-### Distributed Architecture
-
-
-Future scaling:
-
-
-
-Server 1
-
-Server 2
-
-Server 3
-
-  |
-
-  |
-
-Redis Pub/Sub
-
-
-
-allows all instances to communicate efficiently.
-
-
----
+Enables future horizontal scaling.
 
 ---
 
 # 🛠 Technology Stack
 
+## Frontend Stack
 
-The project is developed using modern full-stack technologies with a focus on scalability, maintainability, and real-time performance.
-
-
----
-
-# 🎨 Frontend Technologies
-
-
-| Technology | Purpose |
-|------------|---------|
-| React.js | Building interactive user interfaces |
-| Zustand | Lightweight global state management |
-| Tailwind CSS | Modern responsive UI styling |
+| Technology       | Purpose                 |
+| ---------------- | ----------------------- |
+| React.js         | User interface          |
+| Zustand          | Global state management |
+| Tailwind CSS     | Styling                 |
 | Socket.IO Client | Real-time communication |
-| WebRTC | Audio and video communication |
-| Axios | API communication |
-| React Router | Client-side routing |
-| React Hooks | Component state and lifecycle management |
-
+| WebRTC           | Audio/video calling     |
+| Axios            | API communication       |
+| React Router     | Routing                 |
 
 ---
 
+## Backend Stack
 
-# ⚙️ Backend Technologies
-
-
-| Technology | Purpose |
-|------------|---------|
-| Node.js | Backend runtime environment |
-| Express.js | REST API development |
-| Socket.IO | Real-time event communication |
-| MongoDB | Primary database |
-| Mongoose | MongoDB object modeling |
-| JWT | Authentication mechanism |
-| bcrypt | Password encryption |
-| Axios | Service-to-service communication |
-
+| Technology | Purpose               |
+| ---------- | --------------------- |
+| Node.js    | Runtime               |
+| Express.js | API development       |
+| Socket.IO  | Real-time events      |
+| MongoDB    | Database              |
+| Mongoose   | ODM                   |
+| JWT        | Authentication        |
+| bcrypt     | Password security     |
+| Axios      | Service communication |
 
 ---
 
+## Infrastructure Stack
 
-# 🚀 Architecture Technologies
-
-
-| Technology | Purpose |
-|------------|---------|
-| Microservices Architecture | Independent backend services |
-| API Gateway Pattern | Centralized request routing |
-| Redis | Real-time data synchronization |
-| Upstash Redis | Cloud-based Redis infrastructure |
-| WebRTC | Peer-to-peer communication |
-| Docker | Containerization |
-| Docker Compose | Multi-service orchestration |
-
+| Technology     | Purpose               |
+| -------------- | --------------------- |
+| Microservices  | Backend architecture  |
+| API Gateway    | Request routing       |
+| Redis          | Distributed state     |
+| Upstash        | Cloud Redis           |
+| Docker         | Containerization      |
+| Docker Compose | Service orchestration |
 
 ---
 
-
-# 🖥 Frontend Architecture
-
-
-The frontend follows a scalable React-based architecture.
-
-
-The application is divided into:
-
-frontend
-
-│
-
-├── components
-
-│
-
-├── pages
-
-│
-
-├── hooks
-
-│
-
-├── store
-
-│
-
-├── services
-
-│
-
-├── socket
-
-│
-
-├── utils
-
-│
-
-└── App.jsx
-
-
-
----
-
-
-# 🧠 State Management Using Zustand
-
-
-The application uses Zustand for efficient global state management.
-
-
-Unlike traditional state management solutions, Zustand provides:
-
-
-- Minimal boilerplate
-- High performance
-- Simple store structure
-- Easy React integration
-
-
----
-
-
-## Zustand Store Responsibilities
-
-
-The global store manages:
-
-
-### Authentication State
-
-currentUser
-
-authentication status
-
-JWT information
-
-
-
----
-
-
-### Chat State
-
-
-
-selected conversation
-
-messages
-
-active chat user
-
-chat history
-
-
-
----
-
-
-### Real-Time State
-
-
-
-online users
-
-typing users
-
-socket connection
-
-notifications
-
-
-
----
-
-
-### Calling State
-
-
-
-incoming call
-
-outgoing call
-
-call status
-
-media streams
-
-
-
----
-
-
-## Zustand Data Flow
-
-
-          User Action
-
-
-              |
-
-              |
-
-         React Component
-
-
-              |
-
-              |
-
-        Zustand Store
-
-
-              |
-
-              |
-
-   Global Application State
-
-
-              |
-
-              |
-
-      UI Re-render Update
-
-
----
-
-
-# 📡 Socket.IO Client Architecture
-
-
-The frontend maintains a persistent connection with the realtime service.
-
-
-Communication flow:
-
-
-
-React Application
-
-    |
-
-    |
-
-Socket.IO Client
-
-    |
-
-    |
-
-Realtime Service
-
-    |
-
-    |
-
-Socket Events
-
-    |
-
-    |
-
-UI Updates
-
-
-
----
-
-
-# 📞 WebRTC Frontend Flow
-
-
-The frontend handles:
-
-
-- Camera access
-- Microphone access
-- Peer connection creation
-- Media stream handling
-
-
-Flow:
-
-
-
-User Clicks Call
-
-    |
-
-    ▼
-
-Request Media Permission
-
-    |
-
-    ▼
-
-Create RTCPeerConnection
-
-    |
-
-    ▼
-
-Exchange SDP Through Socket
-
-    |
-
-    ▼
-
-Establish Peer Connection
-
-    |
-
-    ▼
-
-Audio / Video Stream
-
-
-
----
-
-
-# 📂 Complete Project Structure
-
-
-The project follows a clean microservices folder organization.
-
-
-
-chat-app
-
-│
-
-├── frontend
-
-│
-
-│ ├── src
-
-│ │
-
-│ ├── components
-
-│ │
-
-│ ├── pages
-
-│ │
-
-│ ├── store
-
-│ │
-
-│ ├── hooks
-
-│ │
-
-│ ├── socket
-
-│ │
-
-│ ├── services
-
-│ │
-
-│ └── App.jsx
-
-│
-
-├── backend
-
-│ ├── api-gateway
-
-│ │
-
-│ ├── routes
-
-│ │
-
-│ ├── middleware
-
-│ │
-
-│ └── server.js
-
-│
-
-├── services
-
-│ │
-
-│ ├── auth-service
-
-│ │
-
-│ ├── controllers
-
-│ ├── models
-
-│ ├── routes
-
-│ ├── services
-
-│ └── server.js
-
-│
-
-│ ├── user-service
-
-│ │
-
-│ ├── controllers
-
-│ ├── models
-
-│ ├── routes
-
-│ └── server.js
-
-│
-
-│ ├── chat-service
-
-│ │
-
-│ ├── controllers
-
-│ ├── models
-
-│ ├── routes
-
-│ └── server.js
-
-│
-
-│ └── realtime-service
-
-│ │
-
-│ ├── sockets
-
-│ ├── events
-
-│ ├── utils
-
-│ └── server.js
-
-│
-
-├── docker-compose.yml
-
-└── README.md
-
-
-
----
-
-
-# 🔄 Complete Application Workflow
-
-
-The complete user journey:
-
-
-              User Opens Application
-
-
-                       |
-
-                       |
-
-
-              Authentication Check
-
-
-                       |
-
-                       |
-
-
-          ---------------------------
-
-          |                         |
-
-          ▼                         ▼
-
-
-      Login                     Register
-
-
-          |                         |
-
-
-          ---------------------------
-
-
-                       |
-
-                       |
-
-
-                Dashboard
-
-
-                       |
-
-                       |
-
-
-            Fetch Available Users
-
-
-                       |
-
-                       |
-
-
-            Select Conversation
-
-
-                       |
-
-                       |
-
-
-          Real-Time Chat Connection
-
-
-                       |
-
-                       |
-
-
-    -------------------------------------
-
-
-    |                |                  |
-
-Messages Typing Status Notifications
-
-    |                |                  |
-
-
-    -------------------------------------
-
-
-                       |
-
-
-              Audio / Video Call
-
-
-                       |
-
-
-                   WebRTC
-
-
----
-
-
-# 🗄 Database Design
-
-
-The application uses MongoDB as the primary database.
-
-
-Database:
-
-
-
-MongoDB
-
-
-
-Collections:
-
-
-
-users
-
-messages
-
-conversations
-
-
-
----
-
-
-# 👤 User Collection
-
-
-Collection:
-
-
-
-users
-
-
-
-Schema:
-
-
-```javascript
-{
-    _id: ObjectId,
-
-    name: String,
-
-    email: String,
-
-    password: String,
-
-    profileImage: String,
-
-    bio: String,
-
-    createdAt: Date,
-
-    updatedAt: Date
-}
-
-💬 Message Collection
-
-Collection:
-
-messages
-
-
-Schema:
-
-{
-    _id: ObjectId,
-
-    senderId: ObjectId,
-
-    receiverId: ObjectId,
-
-    message: String,
-
-    messageType: String,
-
-    status: String,
-
-    createdAt: Date
-
-}
-
-
-Message status example:
-
-sent
-
-delivered
-
-read
-
-👫 Conversation Collection
-
-Collection:
-
-conversations
-
-
-Schema:
-
-{
-    _id: ObjectId,
-
-    participants: [
-
-        userId1,
-
-        userId2
-
-    ],
-
-    lastMessage: ObjectId,
-
-    updatedAt: Date
-
-}
-
-🔐 Authentication Data Flow
-Frontend
-
-
-   |
-
-   |
-
-Login Request
-
-
-   |
-
-   |
-
-API Gateway
-
-
-   |
-
-   |
-
-Auth Service
-
-
-   |
-
-   |
-
-Validate User
-
-
-   |
-
-   |
-
-Generate JWT
-
-
-   |
-
-   |
-
-Return Token
-
-
-🐳 Docker Architecture
-
-The backend services are containerized using Docker.
-
-Docker Compose manages:
-
-API Gateway
-
-Auth Service
-
-User Service
-
-Chat Service
-
-Realtime Service
-
-Redis
-
-MongoDB
-
-
-Architecture:
-
-                Docker Compose
-
-
-                      |
-
-        --------------------------------
-
-
-        |        |        |        |
-
-
-      Auth     User     Chat   Realtime
-
-
-        |        |        |        |
-
-
-        --------------------------------
-
-
-                      |
-
-
-              MongoDB + Redis
-
-
-📦 Docker Benefits
-
-Using Docker provides:
-
-Environment consistency
-Easy deployment
-Service isolation
-Faster development setup
-Cloud deployment readiness
-
----
-
----
-
-# ⚙️ Installation & Setup
-
-
-Follow the steps below to run the project locally.
-
-
----
-
-# 📌 Prerequisites
-
-
-Before starting, make sure the following tools are installed:
-
-
-| Tool | Version |
-|------|---------|
-| Node.js | v18+ |
-| npm | v9+ |
-| MongoDB | Latest |
-| Redis | Latest |
-| Docker | Latest |
-| Docker Compose | Latest |
-
-
----
-
-
-# 📥 Clone Repository
-
-
-```bash
-git clone <repository-url>
-
-cd chat-app
-📁 Project Setup
-
-The project contains two main parts:
-
-chat-app
-
-│
-
-├── frontend
-
-│
-
-└── backend
-
-🎨 Frontend Setup
-
-Navigate to frontend:
-
-cd frontend
-
-Install dependencies:
-
-npm install
-
-Create environment file:
-
-.env
-
-Example:
-
-VITE_API_URL=http://localhost:5000
-
-VITE_SOCKET_URL=http://localhost:5004
-
-
-Run frontend:
-
-npm run dev
-
-Frontend will start:
-
-http://localhost:5173
-
-⚙️ Backend Setup
-
-Navigate:
-
-cd backend
-
-The backend contains multiple independent services.
-
-backend
-
-│
-
-├── api-gateway
-
-├── services
-
-│       |
-
-│       ├── auth-service
-
-│       ├── user-service
-
-│       ├── chat-service
-
-│       └── realtime-service
-
-
-Each service requires dependency installation.
-
-🚪 API Gateway Setup
-
-Navigate:
-
-cd api-gateway
-
-npm install
-
-
-Run:
-
-npm start
-
-
-Service:
-
-PORT : 5000
-
-🔐 Auth Service Setup
-
-Navigate:
-
-cd services/auth-service
-
-npm install
-
-
-Run:
-
-npm start
-
-
-Service:
-
-PORT : 5001
-
-👤 User Service Setup
-
-Navigate:
-
-cd services/user-service
-
-npm install
-
-
-Run:
-
-npm start
-
-
-Service:
-
-PORT : 5002
-
-💬 Chat Service Setup
-
-Navigate:
-
-cd services/chat-service
-
-npm install
-
-
-Run:
-
-npm start
-
-
-Service:
-
-PORT : 5003
-
-⚡ Realtime Service Setup
-
-Navigate:
-
-cd services/realtime-service
-
-npm install
-
-
-Run:
-
-npm start
-
-
-Service:
-
-PORT : 5004
-
-🔑 Environment Configuration
-
-Every backend service contains its own environment configuration.
-
-Auth Service .env
-PORT=5001
-
-
-MONGO_URI=mongodb_connection_string
-
-
-JWT_SECRET=your_secret_key
-
-
-REDIS_URL=your_upstash_redis_url
-
-User Service .env
-PORT=5002
-
-
-MONGO_URI=mongodb_connection_string
-
-Chat Service .env
-PORT=5003
-
-
-MONGO_URI=mongodb_connection_string
-
-Realtime Service .env
-PORT=5004
-
-
-REDIS_URL=your_upstash_redis_url
-
-
-CLIENT_URL=http://localhost:5173
-
-🌐 Complete Service Communication
-                 React Frontend
-
-
-                      |
-
-
-                      |
-
-
-              API Gateway :5000
-
-
-                      |
-
-
- ------------------------------------------------
-
-
- |              |             |                 |
-
-
-Auth          User          Chat          Realtime
-
-
-:5001         :5002         :5003          :5004
-
-
-
-                      |
-
-
-                      |
-
-
-              MongoDB + Redis
-
-
-🐳 Docker Deployment
-
-The project supports containerized deployment using Docker Compose.
-
-Run all services:
-
-docker compose up --build
-
-
-Stop containers:
-
-docker compose down
-
-
-View running containers:
-
-docker ps
-
-Docker Compose Architecture
-docker-compose.yml
-
-
-        |
-
-        |
-
--------------------------------------
-
-
-|          |          |              |
-
-
-Gateway   Auth       User        Chat
-
-
-5000      5001       5002        5003
-
-
-
-                 |
-
-
-                 |
-
-
-             Realtime
-
-
-              5004
-
-
-
-                 |
-
-
-          MongoDB + Redis
-
-🔌 API Documentation
-
-The frontend communicates with backend services through API Gateway.
-
-Base URL:
-
-http://localhost:5000
-
-🔐 Authentication APIs
-Register User
-
-Endpoint:
-
-POST /api/auth/register
-
-
-Request:
-
-{
-    "name":"John Doe",
-
-    "email":"john@gmail.com",
-
-    "password":"password123"
-
-}
-
-
-Response:
-
-{
-    "success":true,
-
-    "token":"jwt_token",
-
-    "user":{}
-
-}
-
-Login User
-
-Endpoint:
-
-POST /api/auth/login
-
-
-Request:
-
-{
-    "email":"john@gmail.com",
-
-    "password":"password123"
-
-}
-
-👤 User APIs
-Get Users
-GET /api/users
-
-
-Returns:
-
-User list
-Profile information
-Online availability
-Search Users
-GET /api/users/search?query=name
-
-Update Profile
-PUT /api/users/profile
-
-
-Updates:
-
-Name
-Profile image
-Bio
-Personal details
-💬 Chat APIs
-Send Message
-POST /api/chat/send
-
-
-Request:
-
-{
- "receiverId":"user_id",
-
- "message":"Hello"
-
-}
-
-Get Conversation
-GET /api/chat/:userId
-
-
-Returns:
-
-Previous messages
-Message status
-Conversation history
-📡 Socket.IO Documentation
-
-The realtime service handles all socket communication.
-
-Connection:
-
-Client
-
- |
-
- |
-
-Socket.IO Client
-
- |
-
- |
-
-Realtime Service
-
-🔗 Connection Event
-
-Event:
-
-connection
-
-
-Triggered when user connects.
-
-🟢 Join Event
-
-Event:
-
-join
-
-
-Purpose:
-
-Register user socket
-Maintain online status
-
-Example:
-
-socket.emit(
-"join",
-{
- userId
-}
-)
-
-💬 Send Message Event
-
-Event:
-
-sendMessage
-
-
-Flow:
-
-Sender
-
- |
-
- |
-
-sendMessage
-
-
- |
-
- |
-
-Realtime Service
-
-
- |
-
- |
-
-Receiver
-
-
-📥 Receive Message Event
-
-Event:
-
-receiveMessage
-
-
-Purpose:
-
-Instant message delivery
-Update chat UI
-✍️ Typing Events
-
-Start typing:
-
-typing
-
-
-Stop typing:
-
-stopTyping
-
-
-Purpose:
-
-Display:
-
-User is typing...
-
-✅ Message Status Events
-
-Events:
-
-messageDelivered
-
-messageRead
-
-
-Message lifecycle:
-
-Sent
-
- ↓
-
-Delivered
-
- ↓
-
-Read
-
-🔔 Notification Events
-
-Event:
-
-newNotification
-
-
-Used for:
-
-New messages
-Incoming calls
-User activity
-📞 WebRTC Signaling Events
-
-Events:
-
-callUser
-
-incomingCall
-
-answerCall
-
-rejectCall
-
-endCall
-
-
-Purpose:
-
-Exchange:
-
-SDP offer
-SDP answer
-ICE candidates
-🧪 Testing Checklist
-
-Before deployment verify:
-
-✅ Authentication flow
-
-✅ Private messaging
-
-✅ Online/offline status
-
-✅ Typing indicator
-
-✅ Read receipts
-
-✅ Notifications
-
-✅ User search
-
-✅ Profile update
-
-✅ Audio call
-
-✅ Video call
-
-✅ Docker deployment
-
+**End of Part 1**
+
+Part 2 में:
+
+* Complete folder structure
+* Database schema
+* API documentation
+* Socket events
+* Environment setup
+* Docker deployment
+* Security
+* Scalability improvements
+* Future roadmap
+* Author section
+  शामिल होंगे।
