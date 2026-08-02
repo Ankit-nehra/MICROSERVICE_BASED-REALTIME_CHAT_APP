@@ -68,7 +68,13 @@ async()=>{
 
   await connectDB();
 
+ app.get("/health", (req,res)=>{
 
+      res.json({
+        status:"user service running",
+      });
+
+    });
   app.listen(
     PORT,
     ()=>{
