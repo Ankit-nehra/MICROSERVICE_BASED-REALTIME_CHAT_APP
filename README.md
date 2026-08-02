@@ -3,7 +3,7 @@
 ## Microservices-Based Communication Platform Using MERN Stack, Socket.IO, WebRTC, Redis & Upstash
 
 <p align="center">
-  <img src="./screenshots/banner.png" alt="Real Time Chat Application Banner" width="900"/>
+  <img src="./chat-app/screenshots/banner.png" alt="Real Time Chat Application Banner" width="900"/>
 </p>
 
 <p align="center">
