@@ -68,11 +68,15 @@ async()=>{
 
   await connectDB();
 
- app.get("/health", (req,res)=>{
+app.get(
+  "/health",
+  (req, res) => {
 
-      res.json({
-        status:"user service running",
-      });
+    res.json({
+      service: "user-service",
+      status: "running",
+    });
+
 
     });
   app.listen(
